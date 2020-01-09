@@ -1,0 +1,26 @@
+{
+  "name": "rot",
+  "version": "1.0.0",
+  "description": "experimenting with rot.js for some tooling ideas I've had for a while",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "dev": "serve .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mreinstein/rot.js.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mreinstein/rot.js/issues"
+  },
+  "homepage": "https://github.com/mreinstein/rot.js#readme",
+  "dependencies": {
+    "@xstate/fsm": "^1.2.0",
+    "rot-js": "^2.1.1",
+    "serve": "^11.3.0"
+  }
+}
