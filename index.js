@@ -13,13 +13,6 @@ TODO:
 * put text label in box
 * put text label on line
 
-
-remaining finite states:
-* moving box
-* removing line
-* labeling box
-* labeling line
-
 */
 
 
@@ -33,8 +26,9 @@ const display = new Display({
 	bg: '#fff',
 	width: model.rows,
 	height: model.cols,
-	//fontSize: 18,
-	spacing: 1.5
+	fontSize: 12,
+    fontFamily: 'SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace',
+	spacing: 1
 })
 
 const container = display.getContainer()
