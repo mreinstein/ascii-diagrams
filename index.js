@@ -34,7 +34,7 @@ const display = new Display({
 	width: model.rows,
 	height: model.cols,
 	//fontSize: 18,
-	spacing: 1
+	spacing: 1.5
 })
 
 const container = display.getContainer()
@@ -56,7 +56,7 @@ const asciiMachine = createMachine({
         boxes: [ ],
         lines: [ ],
 	    currentPos: undefined,
-		downPos: undefined 
+		downPos: undefined
     },
 
     states: {
@@ -79,7 +79,7 @@ const asciiMachine = createMachine({
             },
             exit: function (context/*, event */) {
              	container.onmousedown = undefined
-            },    
+            },
             on: {
             	TOGGLE_LINEDRAW: 'drawing_line',
             	DRAW_BOX: 'drawing_box'
@@ -131,9 +131,9 @@ const asciiMachine = createMachine({
         			context.activeBox.currentPos = display.eventToPosition(ev)
 					draw(context)
         		}
-        		
+
         		container.onmouseup = function (ev) {
-				
+
 					const currentPos = display.eventToPosition(ev)
 
 					const [ col, row ] = currentPos
@@ -146,7 +146,7 @@ const asciiMachine = createMachine({
 
 					if (maxCol - minCol >=1 && maxRow - minRow >= 1)
 						context.boxes.push({  minCol, minRow, maxCol, maxRow })
-					
+
 					asciiService.send('END_DRAW')
 					draw(context)
 				}
@@ -170,7 +170,7 @@ asciiService.send('INIT')
 
 
 function drawBox ({ minCol, minRow, maxCol, maxRow, fill }) {
-	const boxPieces = [ '└', '┙', '┑', '┏', '━', '│' ]
+	const boxPieces = [ '└', '┘', '┐', '┌', '-', '|' ]
 
 	const borderColor = '#333'
 
@@ -178,7 +178,7 @@ function drawBox ({ minCol, minRow, maxCol, maxRow, fill }) {
 	display.draw(maxCol, maxRow, boxPieces[1], borderColor)
 	display.draw(maxCol, minRow, boxPieces[2], borderColor)
 	display.draw(minCol, maxRow, boxPieces[0], borderColor)
-	
+
 	for (let c=minCol+1; c < maxCol; c++) {
 		display.draw(c, maxRow, boxPieces[4], borderColor)
 		display.draw(c, minRow, boxPieces[4], borderColor)
@@ -236,7 +236,7 @@ function draw (context) {
 }
 
 window.addEventListener('resize', function () {
-	// TODO: resize the grid based on screen dimensions	
+	// TODO: resize the grid based on screen dimensions
 })
 
 
