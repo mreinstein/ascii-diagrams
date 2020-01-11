@@ -11,9 +11,95 @@ TODO:
 * move box
 * remove line
 * put text label in box
+* explore dom based renderer
 * put text label on line
 
 */
+
+
+function findBox (col, row, boxes) {
+    return boxes.find((b) => col >= b.minCol && col <= b.maxCol && row >= b.minRow && row <= b.maxRow)
+}
+
+
+// given a box and a point on the box, determine the
+// point on the edge of the box closest to the provided point
+//
+// @param Object box { minCol, minRow, maxCol, maxRow }
+function findClosestPointOnBox (col, row, box) {
+    // determine the box side that is closest
+    let delta = Math.abs(col - box.minCol)
+    let side = 'left'
+
+    if (Math.abs(col - box.maxCol) < delta) {
+        delta = Math.abs(col - box.maxCol)
+        side = 'right'
+    }
+
+    if (Math.abs(row - box.maxRow) < delta) {
+        delta = Math.abs(row - box.maxRow)
+        side = 'bottom'
+    }
+
+    if (Math.abs(row - box.minRow) < delta) {
+        delta = Math.abs(row - box.minRow)
+        side = 'top'
+    }
+
+    if (side === 'left')
+        return { col: minCol, row, side }
+
+    if (side === 'right')
+        return { col: maxCol, row, side }
+
+    if (side === 'bottom')
+        return { col, row: maxRow, side }
+
+    return { col, row: minRow, side }
+}
+
+
+function getArrowDirection (path) {
+    const [ col, row ] = path[path.length-2]
+    const [ col2, row2 ] = path[path.length-1]
+
+    const dx = col2 - col
+    const dy = row2 - row
+
+    if (dx > 0)
+        return 'right'
+
+    if (dx < 0)
+        return 'left'
+
+    if (dy > 0)
+        return 'bottom'
+
+    return 'top'
+}
+
+
+// given a start position and end position, generate a path of points
+// @param string side which side of the box the line emits from
+function pathLine (side, col, row, col2, row2) {
+
+    const path = [ [ col, row ] ]
+
+    const dx = col2 - col
+    const dy = row2 - row
+
+    if (dx !== 0 && dy !== 0) {
+        // determine where the elbow joint should go
+        if (side === 'top' || side === 'bottom')
+            path.push([ col, row2 ])
+        else
+            path.push([ col2, row ])
+    }
+
+    path.push([ col2, row2 ])
+
+    return path
+}
 
 
 const model = {
@@ -34,7 +120,6 @@ const display = new Display({
 const container = display.getContainer()
 
 document.body.appendChild(container)
-
 
 
 const asciiMachine = createMachine({
@@ -84,6 +169,7 @@ const asciiMachine = createMachine({
         		document.querySelector('button').style.color = 'dodgerblue'
 
         		container.onmousedown = function (ev) {
+                    // TODO: store position of line start relative to the boxes it connects
         			context.activeLine = {
         				currentPos: display.eventToPosition(ev),
         				downPos: display.eventToPosition(ev)
@@ -162,7 +248,6 @@ const asciiService = interpret(asciiMachine).start()
 asciiService.send('INIT')
 
 
-
 function drawBox ({ minCol, minRow, maxCol, maxRow, fill }) {
 	const boxPieces = [ '└', '┘', '┐', '┌', '-', '|' ]
 
@@ -229,13 +314,6 @@ function draw (context) {
 		drawLine(context.activeLine)
 }
 
-window.addEventListener('resize', function () {
-	// TODO: resize the grid based on screen dimensions
-})
-
-
-//display.drawText(5, 5, 'Here goes something!')
-
 
 function animate () {
 	draw(asciiMachine.initialState.context)
@@ -243,3 +321,11 @@ function animate () {
 }
 
 animate()
+
+/*
+window.addEventListener('resize', function () {
+    // TODO: resize the grid based on screen dimensions
+})
+
+//display.drawText(5, 5, 'Here goes something!')
+*/
