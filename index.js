@@ -7,7 +7,6 @@ import bresenham        from '/bresenham.js'
 /*
 TODO:
 
-* draw directional line between boxes
 * move box
 * remove line
 * put text label in box
@@ -47,15 +46,15 @@ function findClosestPointOnBox (col, row, box) {
     }
 
     if (side === 'left')
-        return { col: minCol, row, side }
+        return { col: box.minCol, row, side }
 
     if (side === 'right')
-        return { col: maxCol, row, side }
+        return { col: box.maxCol, row, side }
 
     if (side === 'bottom')
-        return { col, row: maxRow, side }
+        return { col, row: box.maxRow, side }
 
-    return { col, row: minRow, side }
+    return { col, row: box.minRow, side }
 }
 
 
@@ -81,7 +80,10 @@ function getArrowDirection (path) {
 
 // given a start position and end position, generate a path of points
 // @param string side which side of the box the line emits from
-function pathLine (side, col, row, col2, row2) {
+function pathLine (side, start, end) {
+    const { col, row } = start
+    const col2 = end.col
+    const row2 = end.row
 
     const path = [ [ col, row ] ]
 
@@ -169,22 +171,47 @@ const asciiMachine = createMachine({
         		document.querySelector('button').style.color = 'dodgerblue'
 
         		container.onmousedown = function (ev) {
-                    // TODO: store position of line start relative to the boxes it connects
+                    const [ col, row ] = display.eventToPosition(ev)
+                    const box = findBox(col, row, context.boxes)
+                    if (!box)
+                        return
+
+                    const point = findClosestPointOnBox(col, row, box)
+                    // TODO: store position of line start relative to the
+                    //       top left corner of the box it originates from
+                    // TODO: render the line using the relative line start
+
         			context.activeLine = {
-        				currentPos: display.eventToPosition(ev),
-        				downPos: display.eventToPosition(ev)
+                        start: {
+                            box, point
+                        },
+                        end: {
+                            box, point
+                        }
         			}
 
         			container.onmousemove = function (ev) {
-	        			context.activeLine.currentPos = display.eventToPosition(ev)
+                        const [ col, row ] = display.eventToPosition(ev)
+                        const box = findBox(col, row, context.boxes)
+
+                        const point = box ? findClosestPointOnBox(col, row, box) : { col, row }
+
+                        context.activeLine.end.box = box
+	        			context.activeLine.end.point = point
 						draw(context)
 	        		}
         		}
 
         		container.onmouseup = function (ev) {
+                    //console.log('new line created:', context.activeLine)
+                    const path = pathLine(context.activeLine.start.point.side, context.activeLine.start.point, context.activeLine.end.point)
+                    //console.log('path:', path)
+
         			context.lines.push({ ...context.activeLine })
         			context.activeLine = undefined
         			container.onmousemove = undefined
+                    //container.onmouseup = undefined
+                    //container.onmousedown = undefined
         			draw(context)
         		}
 
@@ -193,8 +220,8 @@ const asciiMachine = createMachine({
         		document.querySelector('button').style.color = 'white'
         		context.activeLine = undefined
         		container.onmousemove = undefined
-        		container.onmousedown = undefined
-        		container.onmouseup = undefined
+        		//container.onmousedown = undefined
+        		//container.onmouseup = undefined
         	},
         	on: {
         		TOGGLE_LINEDRAW: 'normal',
@@ -275,10 +302,19 @@ function drawBox ({ minCol, minRow, maxCol, maxRow, fill }) {
 }
 
 
-function drawLine (line) {
-	const l = bresenham(line.downPos[1], line.downPos[0], line.currentPos[1], line.currentPos[0])
+function drawLine (start, end) {
+	const l = bresenham(start[1], start[0], end[1], end[0])
 	for (const next of l)
 		display.draw(next.y, next.x, '#', 'dodgerblue')
+}
+
+
+function drawPath (start, end) {
+    // TODO: draw arrow start and end, lines rather than dodger blue hash marks
+    const path = pathLine(start.point.side, start.point, end.point)
+    for (let i=0; i < path.length-1; i++) {
+        drawLine(path[i], path[i+1])
+    }
 }
 
 
@@ -293,7 +329,7 @@ function draw (context) {
 	clear()
 
 	for (const line of context.lines)
-		drawLine(line)
+		drawPath(line.start, line.end)
 
 	for (const box of context.boxes)
 		drawBox({ ...box, fill: true })
@@ -311,7 +347,7 @@ function draw (context) {
 	}
 
 	if (context.activeLine)
-		drawLine(context.activeLine)
+		drawPath(context.activeLine.start, context.activeLine.end)
 }
 
 
