@@ -1,18 +1,16 @@
 import Display          from '/node_modules/rot-js/lib/display/display.js'
 import { createMachine,
          interpret }    from '/node_modules/@xstate/fsm/es/index.js'
-import bresenham        from '/bresenham.js'
 
 
 /*
 TODO:
-
-* move box
-* remove line
-* put text label in box
-* explore dom based renderer
-* put text label on line
-
+    * move box
+    * remove line
+    * remove box
+    * box label
+    * line label
+    * explore dom based renderer
 */
 
 
@@ -302,19 +300,104 @@ function drawBox ({ minCol, minRow, maxCol, maxRow, fill }) {
 }
 
 
-function drawLine (start, end) {
-	const l = bresenham(start[1], start[0], end[1], end[0])
-	for (const next of l)
-		display.draw(next.y, next.x, '#', 'dodgerblue')
-}
-
-
 function drawPath (start, end) {
-    // TODO: draw arrow start and end, lines rather than dodger blue hash marks
     const path = pathLine(start.point.side, start.point, end.point)
+
+    // convert each line in the path into a set of cells
+    const cells = [ ]
+
     for (let i=0; i < path.length-1; i++) {
-        drawLine(path[i], path[i+1])
+        const start = path[i]
+        const end = path[i+1]
+
+        const dx = end[0] - start[0]
+        const dy = end[1] - start[1]
+        let direction
+
+
+        if (dx !== 0)
+            direction = (dx > 0) ? 'right' : 'left'
+
+        if (dy !== 0)
+            direction = (dy > 0) ? 'down' : 'up'
+
+        if (direction === 'right')
+            for (let c=start[0]; c < end[0]; c++)
+                cells.push({ col: c, row: start[1], direction })
+
+        if (direction === 'left') {
+            //console.log('moop', end[0], start[0])
+            for (let c=start[0]; c >= end[0]; c--)
+                cells.push({ col: c, row: start[1], direction })
+        }
+
+        if (direction === 'down')
+            for (let r=start[1]; r < end[1]; r++)
+                cells.push({ col: end[0], row: r, direction })
+
+        if (direction === 'up')
+            for (let r=start[1]; r >= end[1]; r--)
+                cells.push({ col: end[0], row: r, direction })
     }
+
+
+    if (!cells.length)
+        return
+
+    let lastDirection = cells[0].direction
+
+    cells.forEach(function (cell, idx) {
+        let char = ''
+
+        if (idx === 0) {
+            if (cell.direction === 'left')
+                char = '┤'
+            if (cell.direction === 'right')
+                char = '├'
+            if (cell.direction === 'up')
+                char = '┴'
+            if (cell.direction === 'down')
+                char = '┬'
+        } else if (idx === cells.length - 1) {
+            if (cell.direction === 'left')
+                char = '◀'
+            if (cell.direction === 'right')
+                char = '▶'
+            if (cell.direction === 'up')
+                char = '▲'
+            if (cell.direction === 'down')
+                char = '▼'
+
+        } else if (lastDirection !== cell.direction) {
+            if (lastDirection === 'right' && cell.direction === 'up')
+                char = '┘'
+            if (lastDirection === 'down' && cell.direction === 'left')
+                char = '┘'
+
+            if (lastDirection === 'left' && cell.direction === 'up')
+                char = '└'
+            if (lastDirection === 'down' && cell.direction === 'right')
+                char = '└'
+
+            if (lastDirection === 'left' && cell.direction === 'down')
+                char = '┌'
+            if (lastDirection === 'up' && cell.direction === 'right')
+                char = '┌'
+
+            if (lastDirection === 'right' && cell.direction === 'down')
+                char = '┐'
+            if (lastDirection === 'up' && cell.direction === 'left')
+                char = '┐'
+        } else {
+            if (cell.direction === 'left' || cell.direction === 'right')
+                char = '-'
+            if (cell.direction === 'up' || cell.direction === 'down')
+                char = '|'
+        }
+
+        lastDirection = cell.direction
+        display.draw(cell.col, cell.row, char, 'dodgerblue')
+    })
 }
 
 
@@ -327,9 +410,6 @@ function clear () {
 
 function draw (context) {
 	clear()
-
-	for (const line of context.lines)
-		drawPath(line.start, line.end)
 
 	for (const box of context.boxes)
 		drawBox({ ...box, fill: true })
@@ -345,6 +425,9 @@ function draw (context) {
 
 		drawBox({ minCol, minRow, maxCol, maxRow, fill: true })
 	}
+
+    for (const line of context.lines)
+        drawPath(line.start, line.end)
 
 	if (context.activeLine)
 		drawPath(context.activeLine.start, context.activeLine.end)
