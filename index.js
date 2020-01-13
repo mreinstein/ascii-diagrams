@@ -3,14 +3,16 @@ import { createMachine,
          interpret }    from '/node_modules/@xstate/fsm/es/index.js'
 
 
+//Display.Rect.cache = true
+
 /*
 TODO:
     * remove line
     * remove box
-    * starting a line not connected to a box throws an error
     * box label
     * line label
     * explore dom based renderer
+    * bug: starting a line not connected to a box throws an error
 */
 
 
@@ -185,16 +187,25 @@ const asciiMachine = createMachine({
                         return
 
                     const point = findClosestPointOnBox(col, row, box)
-                    // TODO: store position of line start relative to the
-                    //       top left corner of the box it originates from
-                    // TODO: render the line using the relative line start
 
         			context.activeLine = {
                         start: {
-                            box, point
+                            box,
+                            point: {
+                                col: point.col - box.minCol,
+                                row: point.row - box.minRow,
+                                side: point.side
+                            }
                         },
                         end: {
-                            box, point
+                            box,
+                            point: {
+                                // store position of line point relative to the
+                                //  top left corner of the box it connects with
+                                col: point.col - box.minCol,
+                                row: point.row - box.minRow,
+                                side: point.side
+                            }
                         }
         			}
 
@@ -202,24 +213,27 @@ const asciiMachine = createMachine({
                         const [ col, row ] = display.eventToPosition(ev)
                         const box = findBox(col, row, context.boxes)
 
-                        const point = box ? findClosestPointOnBox(col, row, box) : { col, row }
+                        if (box) {
+                            const point = findClosestPointOnBox(col, row, box)
+                            context.activeLine.end.point = {
+                                col: point.col - box.minCol,
+                                row: point.row - box.minRow,
+                                side: point.side
+                            }
+                        } else {
+                           context.activeLine.end.point = { col, row }
+                        }
 
                         context.activeLine.end.box = box
-	        			context.activeLine.end.point = point
+
 						draw(context)
 	        		}
         		}
 
         		container.onmouseup = function (ev) {
-                    //console.log('new line created:', context.activeLine)
-                    const path = pathLine(context.activeLine.start.point.side, context.activeLine.start.point, context.activeLine.end.point)
-                    //console.log('path:', path)
-
         			context.lines.push({ ...context.activeLine })
         			context.activeLine = undefined
         			container.onmousemove = undefined
-                    //container.onmouseup = undefined
-                    //container.onmousedown = undefined
         			draw(context)
         		}
 
@@ -357,7 +371,13 @@ function drawBox ({ minCol, minRow, maxCol, maxRow, fill }) {
 
 
 function drawPath (start, end) {
-    const path = pathLine(start.point.side, start.point, end.point)
+
+    // render the line using the relative line start if connected box is present
+    const startPoint = start.box ? ({ col: start.box.minCol + start.point.col, row: start.box.minRow + start.point.row }) : start.point
+
+    const endPoint = end.box ? ({ col: end.box.minCol + end.point.col, row: end.box.minRow + end.point.row }) : end.point
+
+    const path = pathLine(start.point.side, startPoint, endPoint)
 
     // convert each line in the path into a set of cells
     const cells = [ ]
@@ -370,7 +390,6 @@ function drawPath (start, end) {
         const dy = end[1] - start[1]
         let direction
 
-
         if (dx !== 0)
             direction = (dx > 0) ? 'right' : 'left'
 
@@ -381,11 +400,9 @@ function drawPath (start, end) {
             for (let c=start[0]; c < end[0]; c++)
                 cells.push({ col: c, row: start[1], direction })
 
-        if (direction === 'left') {
-            //console.log('moop', end[0], start[0])
+        if (direction === 'left')
             for (let c=start[0]; c >= end[0]; c--)
                 cells.push({ col: c, row: start[1], direction })
-        }
 
         if (direction === 'down')
             for (let r=start[1]; r < end[1]; r++)
@@ -452,7 +469,7 @@ function drawPath (start, end) {
         }
 
         lastDirection = cell.direction
-        display.draw(cell.col, cell.row, char, 'dodgerblue')
+        display.draw(cell.col, cell.row, char, 'black')
     })
 }
 
@@ -495,7 +512,7 @@ function animate () {
 	requestAnimationFrame(animate)
 }
 
-animate()
+//animate()
 
 /*
 window.addEventListener('resize', function () {
