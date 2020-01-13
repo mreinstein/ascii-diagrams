@@ -5,26 +5,6 @@ import { createMachine,
 
 //Display.Rect.cache = true
 
-/*
-TODO:
-
-important
-    * box label
-    * line label
-    * remove line
-    * remove box
-    * export
-    * explore control plane
-    * explore dom based renderer
-
-
-icebox
-    * import
-    * resize box
-    * move line
-    * undo/redo
-*/
-
 
 function findBox (col, row, boxes) {
     return boxes.find((b) => col >= b.minCol && col <= b.maxCol && row >= b.minRow && row <= b.maxRow)
