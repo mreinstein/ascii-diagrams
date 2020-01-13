@@ -7,12 +7,15 @@ import { createMachine,
 
 /*
 TODO:
-    * remove line
-    * remove box
     * box label
     * line label
+    * resize box
+    * move line
+    * remove line
+    * remove box
     * explore dom based renderer
     * bug: starting a line not connected to a box throws an error
+    * export/import
 */
 
 
