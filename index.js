@@ -5,9 +5,9 @@ import { createMachine,
 
 /*
 TODO:
-    * move box
     * remove line
     * remove box
+    * starting a line not connected to a box throws an error
     * box label
     * line label
     * explore dom based renderer
@@ -121,6 +121,18 @@ const container = display.getContainer()
 
 document.body.appendChild(container)
 
+const [ moveToggle, lineToggle ] = document.querySelectorAll('button')
+
+
+lineToggle.onclick = function () {
+    asciiService.send('TOGGLE_LINEDRAW')
+}
+
+
+moveToggle.onclick = function () {
+    asciiService.send('TOGGLE_MOVE')
+}
+
 
 const asciiMachine = createMachine({
 	initial: 'uninitialized',
@@ -131,6 +143,8 @@ const asciiMachine = createMachine({
         activeLine: undefined,
 
         downPos: undefined,
+
+        moving: undefined,
 
         boxes: [ ],
         lines: [ ],
@@ -146,11 +160,6 @@ const asciiMachine = createMachine({
     	},
         normal: {
             entry: function (context/*, event */) {
-            	const lineToggle = document.querySelector('button')
-            	lineToggle.onclick = function () {
-            		asciiService.send('TOGGLE_LINEDRAW')
-            	}
-
             	container.onmousedown = function (ev) {
             		context.downPos = display.eventToPosition(ev)
             		asciiService.send('DRAW_BOX')
@@ -161,12 +170,13 @@ const asciiMachine = createMachine({
             },
             on: {
             	TOGGLE_LINEDRAW: 'drawing_line',
+                TOGGLE_MOVE: 'moving_box',
             	DRAW_BOX: 'drawing_box'
             }
         },
         drawing_line: {
         	entry: function (context) {
-        		document.querySelector('button').style.color = 'dodgerblue'
+                lineToggle.style.color = 'dodgerblue'
 
         		container.onmousedown = function (ev) {
                     const [ col, row ] = display.eventToPosition(ev)
@@ -215,7 +225,7 @@ const asciiMachine = createMachine({
 
         	},
         	exit: function (context) {
-        		document.querySelector('button').style.color = 'white'
+                lineToggle.style.color = 'white'
         		context.activeLine = undefined
         		container.onmousemove = undefined
         		//container.onmousedown = undefined
@@ -223,7 +233,53 @@ const asciiMachine = createMachine({
         	},
         	on: {
         		TOGGLE_LINEDRAW: 'normal',
+                TOGGLE_MOVE: 'moving_box',
         	}
+        },
+        moving_box: {
+            entry: function (context) {
+                moveToggle.style.color = 'dodgerblue'
+
+                container.onmousedown = function (ev) {
+                    const [ col, row ] = display.eventToPosition(ev)
+                    const box = findBox(col, row, context.boxes)
+                    if (box)
+                        context.moving = {
+                            box,
+                            point: [ box.minCol - col, box.minRow - row ]
+                        }
+                }
+
+                container.onmousemove = function (ev) {
+                    if (!context.moving)
+                        return
+
+                    const [ col, row ] = display.eventToPosition(ev)
+
+                    const dx = col - context.moving.box.minCol + context.moving.point[0]
+                    const dy = row - context.moving.box.minRow + context.moving.point[1]
+
+                    context.moving.box.minCol += dx
+                    context.moving.box.minRow += dy
+
+                    context.moving.box.maxCol += dx
+                    context.moving.box.maxRow += dy
+
+                    draw(context)
+                }
+
+                container.onmouseup = function (ev) {
+                    context.moving = undefined
+                }
+
+            },
+            exit: function (context) {
+                moveToggle.style.color = 'white'
+            },
+            on: {
+                TOGGLE_LINEDRAW: 'drawing_line',
+                TOGGLE_MOVE: 'normal',
+            }
         },
         drawing_box: {
         	entry: function (context) {
