@@ -8,9 +8,9 @@ experimenting with rot.js for some tooling ideas I've had for a while
 
 * box label
 * line label
+* adjust canvas size on window resize
 * remove line
 * remove box
-* adjust canvas size
 * export
 
 
