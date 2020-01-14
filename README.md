@@ -10,12 +10,13 @@ experimenting with rot.js for some tooling ideas I've had for a while
 * line label
 * remove line
 * remove box
+* adjust canvas size
 * export
-* explore control plane
-* explore dom based renderer
 
 
 #### icebox
+* explore dom based renderer
+* explore control plane
 * import
 * resize box
 * move line
