@@ -1,5 +1,6 @@
-# rot.js
-experimenting with rot.js for some tooling ideas I've had for a while
+# ascii-rendering
+
+some ideas I've been wanting to experiment with for a while
 
 
 ### TODOs
@@ -10,10 +11,9 @@ experimenting with rot.js for some tooling ideas I've had for a while
   * dom based renderer
   * https://github.com/tapio/unicodetiles.js (has blurry canvas and webgl renderer though)
   * https://github.com/maetl/overprint
-  
+* adjust canvas size on window resize
 * box label
 * line label
-* adjust canvas size on window resize
 * remove line
 * remove box
 * export
