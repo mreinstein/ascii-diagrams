@@ -4,13 +4,16 @@ import resolve    from 'rollup-plugin-node-resolve'
 
 const config = [
   {
-    input: 'index.js',
+    input: 'dom-renderer/index.js',
     output: {
-      file: 'bundle.js',
+      file: 'dom-renderer/bundle.js',
       format: 'iife',
       name: 'xidOut'
     },
-    plugins: [ ]
+    plugins: [
+    	resolve(),
+    	commonjs()
+    ]
   }
 ]
 

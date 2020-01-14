@@ -1,5 +1,8 @@
+import html from 'snabby'
+
+
 const _grid = {
-	columns: 160,
+	columns: 100,
 	rows: 54,
 	data: [ ]
 }
@@ -12,9 +15,11 @@ for (let i=0; i < _grid.columns * _grid.rows; i++) {
 }
 
 
-// TODO: investigate snabby for rendering
-function createGrid (grid) {
-	let result = ''
+let vNode = document.getElementById('grid')
+
+
+function render (grid) {
+	const result = [ ]
 
 	const bgColor = 'white'
 	const fgColor = 'black'
@@ -22,14 +27,13 @@ function createGrid (grid) {
 	for (let row = 0; row < grid.rows; row++) {
 		for (let col=0; col < grid.columns; col++) {
 			const cell = (row * grid.columns) + col
-			result += `<div style="color: ${fgColor}; background-color: ${bgColor}; width: 9px;">${grid.data[cell]}</div>`
+			result.push(html`<div style="color: ${fgColor}; background-color: ${bgColor}; width: 9px;">${grid.data[cell]}</div>`)
 		}
-		result += '<br>'
+		result.push(html`<br>`)
 	}
 
-	const gridEl = document.getElementById('grid')
-	gridEl.innerHTML = result
+	vNode = html.update(vNode, html`<div id="grid" class="unicodetiles">${result}</div>`)
 }
 
 
-createGrid(_grid)
+render(_grid)
