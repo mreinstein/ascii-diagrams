@@ -1,5 +1,7 @@
 //import Display          from '/node_modules/rot-js/lib/display/display.js'
-import Display          from './dom-renderer/index.js'
+//import Display          from './dom-renderer/index.js'
+import CharCode         from './raster-font/char_code.js'
+import Display          from './raster-font/index.js'
 import { createMachine,
          interpret }    from '/node_modules/@xstate/fsm/es/index.js'
 
@@ -96,15 +98,15 @@ function pathLine (side, start, end) {
 
 
 const model = {
-	rows: 100,
-	cols: 35
+	cols: 160,
+	rows: 35
 }
 
 // defaults to 80x25
 const display = Display({
 	bg: '#fff',
-	width: model.rows,
-	height: model.cols,
+	rows: model.rows,
+	columns: model.cols,
 	fontSize: 12,
     fontFamily: 'SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace',
 	spacing: 1
@@ -346,7 +348,16 @@ asciiService.send('INIT')
 
 
 function drawBox ({ minCol, minRow, maxCol, maxRow, fill }) {
-	const boxPieces = [ '└', '┘', '┐', '┌', '-', '|' ]
+	//const boxPieces = [ '└', '┘', '┐', '┌', '-', '|' ]
+    const boxPieces = [
+        CharCode.boxDrawingsLightUpAndRight, // '└', 
+        CharCode.boxDrawingsLightUpAndLeft, //'┘',
+        CharCode.boxDrawingsLightDownAndLeft, //'┐',
+        CharCode.boxDrawingsLightDownAndRight, //'┌',
+        
+        CharCode.boxDrawingsLightHorizontal, //'-'
+        CharCode.boxDrawingsLightVertical // '|'
+    ]
 
 	const borderColor = 'black' //'#333'
 
@@ -426,48 +437,48 @@ function drawPath (start, end) {
 
         if (idx === 0) {
             if (cell.direction === 'left')
-                char = '┤'
+                char = CharCode.boxDrawingsLightVerticalAndLeft //'┤'
             if (cell.direction === 'right')
-                char = '├'
+                char = CharCode.boxDrawingsLightVerticalAndRight //'├'
             if (cell.direction === 'up')
-                char = '┴'
+                char = CharCode.boxDrawingsLightUpAndHorizontal //'┴'
             if (cell.direction === 'down')
-                char = '┬'
+                char = CharCode.boxDrawingsLightDownAndHorizontal //'┬'
         } else if (idx === cells.length - 1) {
             if (cell.direction === 'left')
-                char = '◀'
+                char = CharCode.blackLeftPointingPointer //'◀'
             if (cell.direction === 'right')
-                char = '▶'
+                char = CharCode.blackRightPointingPointer //'▶'
             if (cell.direction === 'up')
-                char = '▲'
+                char = CharCode.blackUpPointingTriangle //'▲'
             if (cell.direction === 'down')
-                char = '▼'
+                char = CharCode.blackDownPointingTriangle //'▼'
 
         } else if (lastDirection !== cell.direction) {
             if (lastDirection === 'right' && cell.direction === 'up')
-                char = '┘'
+                char = CharCode.boxDrawingsLightUpAndLeft //'┘'
             if (lastDirection === 'down' && cell.direction === 'left')
-                char = '┘'
+                char = CharCode.boxDrawingsLightUpAndLeft //'┘'
 
             if (lastDirection === 'left' && cell.direction === 'up')
-                char = '└'
+                char = CharCode.boxDrawingsLightUpAndRight //char = '└'
             if (lastDirection === 'down' && cell.direction === 'right')
-                char = '└'
+                char = CharCode.boxDrawingsLightUpAndRight //char = '└'
 
             if (lastDirection === 'left' && cell.direction === 'down')
-                char = '┌'
+                char = CharCode.boxDrawingsLightDownAndRight //'┌'
             if (lastDirection === 'up' && cell.direction === 'right')
-                char = '┌'
+                char = CharCode.boxDrawingsLightDownAndRight //'┌',    
 
             if (lastDirection === 'right' && cell.direction === 'down')
-                char = '┐'
+                char = CharCode.boxDrawingsLightDownAndLeft //'┐'
             if (lastDirection === 'up' && cell.direction === 'left')
-                char = '┐'
+                char = CharCode.boxDrawingsLightDownAndLeft //'┐'
         } else {
             if (cell.direction === 'left' || cell.direction === 'right')
-                char = '-'
+                char = CharCode.boxDrawingsLightHorizontal //'-'
             if (cell.direction === 'up' || cell.direction === 'down')
-                char = '|'
+                char = CharCode.boxDrawingsLightVertical //'|'
         }
 
         lastDirection = cell.direction
@@ -477,14 +488,18 @@ function drawPath (start, end) {
 
 
 function clear () {
+    //console.log('clearing')
+    display.clear()
+    /*
 	for (let r=0; r < model.rows; r++)
 		for (let c=0; c < model.cols; c++)
-			display.draw(r, c, '.', 'whitesmoke')
+			display.draw(c, r, '.', 'whitesmoke')
+        */
 }
 
 
 function draw (context) {
-	//clear()
+    clear()
 
 	for (const box of context.boxes)
 		drawBox({ ...box, fill: true })
