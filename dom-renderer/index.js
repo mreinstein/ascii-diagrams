@@ -17,6 +17,23 @@ for (let i=0; i < _grid.columns * _grid.rows; i++) {
 }
 
 
+// TODO: implement draw API as exposed by rot.js
+
+function eventToPosition (e) {
+	let x, y
+
+	if ('touches' in e) {
+		x = e.touches[0].clientX
+		y = e.touches[0].clientY
+	} else {
+		x = e.clientX
+		y = e.clientY
+	}
+
+	return [ x / 9 | 0, y / 16 | 0]
+}
+
+
 function render (grid) {
 	for (let i=0; i < changed.length; i++) {
 		const idx = changed[i]
