@@ -6,7 +6,6 @@ some ideas I've been wanting to experiment with for a while
 ### TODOs
 
 #### important
-* adjust canvas size on window resize
 * box label
 * line label
 * remove line
@@ -15,6 +14,8 @@ some ideas I've been wanting to experiment with for a while
 
 
 #### icebox
+* detect changed cells per update ( more efficient rendering)
+* adjust canvas size on window resize
 * explore control plane
 * import
 * resize box
