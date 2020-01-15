@@ -1,4 +1,5 @@
-import Display          from '/node_modules/rot-js/lib/display/display.js'
+//import Display          from '/node_modules/rot-js/lib/display/display.js'
+import Display          from './dom-renderer/index.js'
 import { createMachine,
          interpret }    from '/node_modules/@xstate/fsm/es/index.js'
 
@@ -100,7 +101,7 @@ const model = {
 }
 
 // defaults to 80x25
-const display = new Display({
+const display = Display({
 	bg: '#fff',
 	width: model.rows,
 	height: model.cols,
@@ -108,10 +109,11 @@ const display = new Display({
     fontFamily: 'SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace',
 	spacing: 1
 })
+//display.render()
 
 const container = display.getContainer()
-
 document.body.appendChild(container)
+
 
 const [ moveToggle, lineToggle, boxToggle ] = document.querySelectorAll('button')
 
@@ -482,7 +484,7 @@ function clear () {
 
 
 function draw (context) {
-	clear()
+	//clear()
 
 	for (const box of context.boxes)
 		drawBox({ ...box, fill: true })
@@ -504,6 +506,8 @@ function draw (context) {
 
 	if (context.activeLine)
 		drawPath(context.activeLine.start, context.activeLine.end)
+
+    display.render()
 }
 
 
@@ -511,6 +515,7 @@ function animate () {
 	draw(asciiMachine.initialState.context)
 	requestAnimationFrame(animate)
 }
+
 
 //animate()
 

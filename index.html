@@ -26,6 +26,40 @@
         cursor: pointer;
         text-transform: uppercase;
       }
+
+      @charset "utf-8";
+
+      @font-face {
+      font-family: 'DejaVuSansMono';
+        src: url('DejaVuSansMono.eot');
+        src: url('DejaVuSansMono.eot?#iefix') format('eot'),
+           url('DejaVuSansMono.woff') format('woff'),
+           url('DejaVuSansMono.ttf') format('truetype');
+      }
+
+      .unicodetiles {
+        font-family: "DejaVuSansMono", "DejaVu Sans Mono", monospace;
+        white-space: pre;
+        text-align: center;
+        line-height: 1;
+        letter-spacing: 0px;
+        display: inline-block;
+      }
+
+      .unicodetiles div {
+        float: left;
+        height: 1em;
+        user-select: none;
+      }
+
+      .unicodetiles br {
+        clear: both;
+      }
+
+      #grid {
+        font-size: 16px;
+      }
+    
   </style>
 </head>
 <body>
