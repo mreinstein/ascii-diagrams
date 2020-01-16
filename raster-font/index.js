@@ -121,8 +121,16 @@ export default function Display ({ bg, columns, rows }) {
     }
 
 
-    const drawText = function (col, row, str, fg, bgColor=bg) {
-        // TODO
+    const drawText = function (startCol, startRow, str, fg, bgColor=bg) {
+        const rows = str.split('\n')
+        let currentRow = startRow
+
+        for (const row of rows) {
+            for (let i=0; i < row.length; i++)
+                draw(startCol + i, currentRow, row[i], fg, bgColor)
+
+            currentRow++
+        }
     }
 
 

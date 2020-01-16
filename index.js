@@ -256,9 +256,6 @@ const asciiMachine = createMachine({
                     const [ col, row ] = display.eventToPosition(ev)
                     const box = findBox(col, row, context.boxes)
 
-                    //if (textarea.style.display === 'none' && box)
-                    //    textarea.value = ''
-
                     textarea.style.display = box ? '' : 'none'
                     if (!box) {
                         if (context.labelingBox)
@@ -582,17 +579,7 @@ function clear () {
 function drawLabel (label) {
     const startCol = label.box.minCol + label.point[0]
     const startRow = label.box.minRow + label.point[1]
-
-    const rows = label.text.split('\n')
-    let currentRow = startRow
-
-    for (const row of rows) {
-        for (let i=0; i < row.length; i++) {
-            display.draw(startCol + i, currentRow, row[i], 'black')
-        }
-
-        currentRow++
-    }
+    display.drawText(startCol, startRow, label.text, 'black')
 }
 
 
