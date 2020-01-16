@@ -13,7 +13,7 @@
 
   <style>
       body {
-        background-color: whitesmoke;
+        background-color: white;
         padding: 0;
         margin: 0;
       }
@@ -59,14 +59,21 @@
       #grid {
         font-size: 16px;
       }
+
+      canvas {
+        border: 1px solid #999;
+      }
     
   </style>
 </head>
 <body>
 
-  <button style="position: fixed; bottom: 0px; right: 180px;">move box</button>
+  <textarea placeholder="my text goes here"  style="display: none; position: fixed; bottom: 0px; left: 0; width: 50%; height: 100px;"></textarea>
+  <button style="position: fixed; bottom: 0px; right: 300px;">label</button>
+
+  <button style="position: fixed; bottom: 0px; right: 200px;">move box</button>
   <button style="position: fixed; bottom: 0px; right: 0px;">draw line</button>
-  <button style="position: fixed; bottom: 0px; right: 90px;">draw box</button>
+  <button style="position: fixed; bottom: 0px; right: 100px;">draw box</button>
 
   <script type="module" src="./index.js"></script>
 </body>

@@ -98,8 +98,8 @@ function pathLine (side, start, end) {
 
 
 const model = {
-	cols: 160,
-	rows: 35
+	cols: 100,
+	rows: 50
 }
 
 // defaults to 80x25
@@ -117,13 +117,12 @@ const container = display.getContainer()
 document.body.appendChild(container)
 
 
-const [ moveToggle, lineToggle, boxToggle ] = document.querySelectorAll('button')
+const [ labelToggle, moveToggle, lineToggle, boxToggle ] = document.querySelectorAll('button')
 
 
 lineToggle.onclick = function () {
     asciiService.send('TOGGLE_LINEDRAW')
 }
-
 
 moveToggle.onclick = function () {
     asciiService.send('TOGGLE_MOVE')
@@ -133,6 +132,9 @@ boxToggle.onclick = function () {
     asciiService.send('TOGGLE_BOXDRAW')
 }
 
+labelToggle.onclick = function () {
+    asciiService.send('TOGGLE_LABEL')
+}
 
 const asciiMachine = createMachine({
 	initial: 'uninitialized',
@@ -143,6 +145,8 @@ const asciiMachine = createMachine({
         activeLine: undefined,
 
         movingBox: undefined,
+
+        labelingBox: undefined,
 
         boxes: [ ],
         lines: [ ],
@@ -158,6 +162,7 @@ const asciiMachine = createMachine({
         normal: {
             on: {
                 TOGGLE_BOXDRAW: 'drawing_box',
+                TOGGLE_LABEL: 'labeling',
             	TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'moving_box',
             	DRAW_BOX: 'drawing_box'
@@ -235,9 +240,77 @@ const asciiMachine = createMachine({
         	},
         	on: {
                 TOGGLE_BOXDRAW: 'drawing_box',
+                TOGGLE_LABEL: 'labeling',
         		TOGGLE_LINEDRAW: 'normal',
                 TOGGLE_MOVE: 'moving_box'
         	}
+        },
+        labeling: {
+            entry: function (context) {
+                labelToggle.style.color = 'dodgerblue'
+
+
+                const textarea = document.querySelector('textarea')
+
+                container.onmousedown = function (ev) {
+                    const [ col, row ] = display.eventToPosition(ev)
+                    const box = findBox(col, row, context.boxes)
+
+                    //if (textarea.style.display === 'none' && box)
+                    //    textarea.value = ''
+
+                    textarea.style.display = box ? '' : 'none'
+                    if (!box) {
+                        if (context.labelingBox)
+                            context.labelingBox.box.labels.push(context.labelingBox)  
+                        context.labelingBox = undefined
+                        textarea.value = ''
+                        return
+                    }
+
+                    console.log('about to set focus on textarea')
+                    setTimeout(function () {
+                       textarea.focus() 
+                    })
+                    
+                    const relativeCol = col - box.minCol
+                    const relativeRow = row - box.minRow
+
+                    context.labelingBox = {
+                        box,
+                        point: [ relativeCol, relativeRow ],
+                        text: ''
+                    }
+                }
+
+                textarea.onkeyup = function () {
+                    if (!context.labelingBox)
+                        return
+                    context.labelingBox.text = textarea.value
+                    draw(context)
+                }
+
+               
+            },
+            exit: function (context) {
+                if (context.labelingBox)
+                    context.labelingBox.box.labels.push(context.labelingBox)
+
+                const textarea = document.querySelector('textarea')
+                textarea.value = ''
+                textarea.onkeyup = undefined
+                textarea.style.display = 'none'
+                container.onmousedown = undefined
+                context.labelingBox = undefined
+                labelToggle.style.color = 'white'
+            },
+            on: {
+                TOGGLE_BOXDRAW: 'drawing_box',
+                TOGGLE_LABEL: 'normal',
+                TOGGLE_LINEDRAW: 'drawing_line',
+                TOGGLE_MOVE: 'moving_box',
+                DRAW_BOX: 'drawing_box'
+            }
         },
         moving_box: {
             entry: function (context) {
@@ -277,10 +350,12 @@ const asciiMachine = createMachine({
 
             },
             exit: function (context) {
+                container.onmouseup = container.onmousedown = container.onmousemove = undefined
                 moveToggle.style.color = 'white'
             },
             on: {
                 TOGGLE_BOXDRAW: 'drawing_box',
+                TOGGLE_LABEL: 'labeling',
                 TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'normal',
             }
@@ -307,6 +382,8 @@ const asciiMachine = createMachine({
         		}
 
         		container.onmouseup = function (ev) {
+                    if (!context.activeBox)
+                        return
 
 					const currentPos = display.eventToPosition(ev)
 
@@ -319,7 +396,7 @@ const asciiMachine = createMachine({
 					const maxRow = Math.max(row, context.activeBox.downPos[1])
 
 					if (maxCol - minCol >=1 && maxRow - minRow >= 1)
-						context.boxes.push({  minCol, minRow, maxCol, maxRow })
+						context.boxes.push({  minCol, minRow, maxCol, maxRow, labels: [ ] })
 
                     context.activeBox = undefined
 
@@ -335,6 +412,7 @@ const asciiMachine = createMachine({
         	},
         	on: {
         		TOGGLE_BOXDRAW: 'normal',
+                TOGGLE_LABEL: 'labeling',
                 TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'moving_box'
         	}
@@ -347,7 +425,7 @@ const asciiService = interpret(asciiMachine).start()
 asciiService.send('INIT')
 
 
-function drawBox ({ minCol, minRow, maxCol, maxRow, fill }) {
+function drawBox ({ minCol, minRow, maxCol, maxRow, fill, labels }) {
 	//const boxPieces = [ '└', '┘', '┐', '┌', '-', '|' ]
     const boxPieces = [
         CharCode.boxDrawingsLightUpAndRight, // '└', 
@@ -380,6 +458,10 @@ function drawBox ({ minCol, minRow, maxCol, maxRow, fill }) {
 		for (let r=minRow+1; r < maxRow; r++)
 			for (let c=minCol+1; c < maxCol; c++)
 				display.draw(c, r, '▉', 'white')
+
+
+    for (const label of labels)
+        drawLabel(label)
 }
 
 
@@ -488,13 +570,29 @@ function drawPath (start, end) {
 
 
 function clear () {
-    //console.log('clearing')
     display.clear()
     /*
 	for (let r=0; r < model.rows; r++)
 		for (let c=0; c < model.cols; c++)
 			display.draw(c, r, '.', 'whitesmoke')
         */
+}
+
+
+function drawLabel (label) {
+    const startCol = label.box.minCol + label.point[0]
+    const startRow = label.box.minRow + label.point[1]
+
+    const rows = label.text.split('\n')
+    let currentRow = startRow
+
+    for (const row of rows) {
+        for (let i=0; i < row.length; i++) {
+            display.draw(startCol + i, currentRow, row[i], 'black')
+        }
+
+        currentRow++
+    }
 }
 
 
@@ -513,7 +611,7 @@ function draw (context) {
 		const minRow = Math.min(row, context.activeBox.downPos[1])
 		const maxRow = Math.max(row, context.activeBox.downPos[1])
 
-		drawBox({ minCol, minRow, maxCol, maxRow, fill: true })
+		drawBox({ minCol, minRow, maxCol, maxRow, labels: [ ], fill: true })
 	}
 
     for (const line of context.lines)
@@ -521,6 +619,11 @@ function draw (context) {
 
 	if (context.activeLine)
 		drawPath(context.activeLine.start, context.activeLine.end)
+
+
+
+    if (context.labelingBox)
+        drawLabel(context.labelingBox)
 
     display.render()
 }
