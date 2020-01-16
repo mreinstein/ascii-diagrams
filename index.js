@@ -7,6 +7,74 @@ import { createMachine,
 
 
 //Display.Rect.cache = true
+function expandBox (box, point) {
+    const [ col, row ] = point
+
+    if (col < box.minCol)
+        box.minCol = col
+
+    if (row < box.minRow)
+        box.minRow = row
+
+    if (col > box.maxCol)
+        box.maxCol = col
+
+    if (row > box.maxRow)
+        box.maxRow = row    
+}
+
+
+function getBoundingBox (context) {
+   const boundingBox = { }
+
+    for (const box of context.boxes) {
+        if (boundingBox.minCol === undefined) {
+            boundingBox.minCol = box.minCol
+            boundingBox.minRow = box.minRow
+            boundingBox.maxCol = box.maxCol
+            boundingBox.maxRow = box.maxRow
+        }
+
+        expandBox(boundingBox, [ box.minCol, box.minRow ])
+        expandBox(boundingBox, [ box.maxCol, box.maxRow ])
+    }
+
+    for (const line of context.lines) {
+        const start = [
+            line.start.box.minCol + line.start.point[0],
+            line.start.box.minRow + line.start.point[1],
+        ]
+
+        const end = [
+            line.end.box.minCol + line.end.point[0],
+            line.end.box.minRow + line.end.point[1],
+        ]
+
+        if (minCol === undefined) {
+            boundingBox.minCol = start[0]
+            boundingBox.minRow = start[1]
+            boundingBox.maxCol = start[0]
+            boundingBox.maxRow = start[1]
+        }
+
+        expandBox(boundingBox, start)
+        expandBox(boundingBox, end)
+    }
+    
+    return boundingBox 
+}
+
+
+function exportToAscii (context) {
+    let result = ''
+    
+    // find the bounding box that includes all non-whitespace cells
+    const boundingBox = getBoundingBox(context)
+    console.log('bounding box::', boundingBox)
+    // TODO: extract data from the grid
+    //       can render a unicode char like '\u263b'
+    return result
+}
 
 
 function findBox (col, row, boxes) {
@@ -128,7 +196,7 @@ const container = display.getContainer()
 document.body.appendChild(container)
 
 
-const [ deleteButton, labelToggle, moveToggle, lineToggle, boxToggle ] = document.querySelectorAll('button')
+const [ exportButton, deleteButton, labelToggle, moveToggle, lineToggle, boxToggle ] = document.querySelectorAll('button')
 
 
 lineToggle.onclick = function () {
@@ -150,6 +218,11 @@ labelToggle.onclick = function () {
 deleteButton.onclick = function () {
     asciiService.send('DELETE')
 }
+
+exportButton.onclick = function () {
+    asciiService.send('EXPORT')
+}
+
 
 const asciiMachine = createMachine({
 	initial: 'uninitialized',
@@ -177,12 +250,42 @@ const asciiMachine = createMachine({
 
         normal: {
             on: {
+                EXPORT: 'exporting',
                 TOGGLE_BOXDRAW: 'drawing_box',
                 TOGGLE_LABEL: 'labeling',
             	TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'moving_box',
                 DELETE: 'delete',
             	DRAW_BOX: 'drawing_box'
+            }
+        },
+
+        exporting: {
+            entry: function (context) {
+                exportButton.style.color = 'dodgerblue'
+                const dialog = document.querySelector('dialog')
+
+                const textarea = dialog.querySelector('textarea')
+                const exportedResult = exportToAscii(context)
+                const columnCount = exportedResult.indexOf('\n')
+                textarea.setAttribute('cols', columnCount)
+                textarea.value = exportedResult
+
+                dialog.show()
+            },
+            exit: function (context) {
+                exportButton.style.color = 'white'
+                const dialog = document.querySelector('dialog')
+                dialog.close()
+            },
+            on: {
+                EXPORT: 'normal',
+                TOGGLE_BOXDRAW: 'drawing_box',
+                TOGGLE_LABEL: 'labeling',
+                TOGGLE_LINEDRAW: 'drawing_line',
+                TOGGLE_MOVE: 'moving_box',
+                DELETE: 'delete',
+                DRAW_BOX: 'drawing_box'
             }
         },
 
@@ -217,6 +320,7 @@ const asciiMachine = createMachine({
                 deleteButton.style.color = 'white'
             },
             on: {
+                EXPORT: 'exporting',
                 TOGGLE_BOXDRAW: 'drawing_box',
                 TOGGLE_LABEL: 'labeling',
                 TOGGLE_LINEDRAW: 'drawing_line',
@@ -298,6 +402,7 @@ const asciiMachine = createMachine({
         		//container.onmouseup = undefined
         	},
         	on: {
+                EXPORT: 'exporting',
                 DELETE: 'delete',
                 TOGGLE_BOXDRAW: 'drawing_box',
                 TOGGLE_LABEL: 'labeling',
@@ -386,6 +491,7 @@ const asciiMachine = createMachine({
                 labelToggle.style.color = 'white'
             },
             on: {
+                EXPORT: 'exporting',
                 DELETE: 'delete',
                 TOGGLE_BOXDRAW: 'drawing_box',
                 TOGGLE_LABEL: 'normal',
@@ -436,6 +542,7 @@ const asciiMachine = createMachine({
                 moveToggle.style.color = 'white'
             },
             on: {
+                EXPORT: 'exporting',
                 DELETE: 'delete',
                 TOGGLE_BOXDRAW: 'drawing_box',
                 TOGGLE_LABEL: 'labeling',
@@ -494,6 +601,7 @@ const asciiMachine = createMachine({
         		context.activeBox = undefined
         	},
         	on: {
+                EXPORT: 'exporting',
                 DELETE: 'delete',
         		TOGGLE_BOXDRAW: 'normal',
                 TOGGLE_LABEL: 'labeling',

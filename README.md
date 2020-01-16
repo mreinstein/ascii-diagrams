@@ -4,12 +4,8 @@ some ideas I've been wanting to experiment with for a while
 
 
 ### TODOs
-
-#### important
-* export
-
-
-#### icebox
+* export diagram
+* only render cells that change
 * detect changed cells per update ( more efficient rendering)
 * adjust canvas size on window resize
 * explore control plane
