@@ -43,9 +43,12 @@ export default function Display ({ bg, width, height }) {
 
 	const draw = function (col, row, glyph, fg, bgColor=bg) {
 		const idx = Math.floor(row * _grid.columns + col)
+
+		if (_grid.fg[idx] === fg && _grid.bg[idx] === bgColor && _grid.data[idx] === glyph)
+			return
+
 		_grid.fg[idx] = fg
 		_grid.bg[idx] = bgColor
-		//console.log('bg:', bgColor)
 		_grid.data[idx] = glyph
 		changed.push(idx)
 	}
@@ -70,7 +73,7 @@ export default function Display ({ bg, width, height }) {
 		return [ x / 9 | 0, y / 16 | 0]
 	}
 
-	
+
 	return {
 		draw,
 		drawText,

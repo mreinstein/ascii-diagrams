@@ -20,7 +20,7 @@ function expandBox (box, point) {
         box.maxCol = col
 
     if (row > box.maxRow)
-        box.maxRow = row    
+        box.maxRow = row
 }
 
 
@@ -60,14 +60,14 @@ function getBoundingBox (context) {
         expandBox(boundingBox, start)
         expandBox(boundingBox, end)
     }
-    
-    return boundingBox 
+
+    return boundingBox
 }
 
 
 function exportToAscii (context) {
     let result = ''
-    
+
     // find the bounding box that includes all non-whitespace cells
     const boundingBox = getBoundingBox(context)
     console.log('bounding box::', boundingBox)
@@ -312,7 +312,7 @@ const asciiMachine = createMachine({
                             if (line.start.box === box || line.end.box === box)
                                 context.lines.splice(i, 1)
                         }
-                        draw(context) 
+                        draw(context)
                     }
                 }
             },
@@ -422,7 +422,7 @@ const asciiMachine = createMachine({
                     const box = findBox(col, row, context.boxes)
 
                     const line = box ? undefined : findLine(col, row, context.lines)
-                   
+
                     textarea.style.display = (box || line) ? '' : 'none'
                     if (textarea.style.display === 'none') {
                         if (context.labelingBox) {
@@ -438,7 +438,7 @@ const asciiMachine = createMachine({
 
                     // TODO: unclear why I need to do this on the next event tick...
                     setTimeout(function () {
-                       textarea.focus() 
+                       textarea.focus()
                     }, 0)
 
                     if (box) {
@@ -449,7 +449,7 @@ const asciiMachine = createMachine({
                             box,
                             point: [ relativeCol, relativeRow ],
                             text: ''
-                        } 
+                        }
                     } else {
                         const lineStartCol = line.start.box.minCol + line.start.point.col
                         const lineStartRow = line.start.box.minRow + line.start.point.row
@@ -463,7 +463,7 @@ const asciiMachine = createMachine({
                             text: ''
                         }
                     }
-                    
+
                 }
 
                 textarea.onkeyup = function () {
@@ -472,7 +472,7 @@ const asciiMachine = createMachine({
                     context.labelingBox.text = textarea.value
                     draw(context)
                 }
-               
+
             },
             exit: function (context) {
                 if (context.labelingBox) {
@@ -620,16 +620,16 @@ asciiService.send('INIT')
 function drawBox ({ minCol, minRow, maxCol, maxRow, fill, labels }) {
 	//const boxPieces = [ '└', '┘', '┐', '┌', '-', '|' ]
     const boxPieces = [
-        CharCode.boxDrawingsLightUpAndRight, // '└', 
+        CharCode.boxDrawingsLightUpAndRight, // '└',
         CharCode.boxDrawingsLightUpAndLeft, //'┘',
         CharCode.boxDrawingsLightDownAndLeft, //'┐',
         CharCode.boxDrawingsLightDownAndRight, //'┌',
-        
+
         CharCode.boxDrawingsLightHorizontal, //'-'
         CharCode.boxDrawingsLightVertical // '|'
     ]
 
-	const borderColor = 'black' //'#333'
+	const borderColor = '#333'
 
 	display.draw(minCol, minRow, boxPieces[3], borderColor)
 	display.draw(maxCol, maxRow, boxPieces[1], borderColor)
@@ -746,7 +746,7 @@ function drawPath ({ start, end, labels }) {
             if (lastDirection === 'left' && cell.direction === 'down')
                 char = CharCode.boxDrawingsLightDownAndRight //'┌'
             if (lastDirection === 'up' && cell.direction === 'right')
-                char = CharCode.boxDrawingsLightDownAndRight //'┌',    
+                char = CharCode.boxDrawingsLightDownAndRight //'┌',
 
             if (lastDirection === 'right' && cell.direction === 'down')
                 char = CharCode.boxDrawingsLightDownAndLeft //'┐'
@@ -760,7 +760,7 @@ function drawPath ({ start, end, labels }) {
         }
 
         lastDirection = cell.direction
-        display.draw(cell.col, cell.row, char, 'black')
+        display.draw(cell.col, cell.row, char, '#333')
     })
 
     for (const label of labels)
@@ -769,12 +769,9 @@ function drawPath ({ start, end, labels }) {
 
 
 function clear () {
-    display.clear()
-    /*
 	for (let r=0; r < model.rows; r++)
 		for (let c=0; c < model.cols; c++)
 			display.draw(c, r, '.', 'whitesmoke')
-        */
 }
 
 
@@ -789,7 +786,7 @@ function drawLabel (label) {
         startRow = line.start.box.minRow + line.start.point.row + label.point[1]
     }
 
-    display.drawText(startCol, startRow, label.text, 'black')
+    display.drawText(startCol, startRow, label.text, '#333')
 }
 
 

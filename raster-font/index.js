@@ -3,8 +3,8 @@ import unicodeMap from './unicode_map.js'
 
 
 const _font = {
-    charWidth: 9,
-    charHeight: 12,
+    charWidth: 8,
+    charHeight: 10,
     width: 0,
     height: 0
 }
@@ -18,25 +18,40 @@ const _scale = window.devicePixelRatio | 0
 
 const canvas = document.createElement('canvas')
 const _context = canvas.getContext('2d', { alpha: false })
+/*
+_context.mozImageSmoothingEnabled = false
+_context.webkitImageSmoothingEnabled = false
+_context.msImageSmoothingEnabled = false
 _context.imageSmoothingEnabled = false
+*/
 
 
 export default function Display ({ bg, columns, rows }) {
 
-    const _display = {
-        columns,
-        rows
+    const bgs = [ ]
+    const fgs = [ ]
+    const data = [ ]
+    //const changed = [ ]
+
+    for (let row = 0; row < rows; row++) {
+        for (let col=0; col < columns; col++) {
+            const cell = (row * columns) + col
+            data[cell] = ' '
+            fgs[cell] = bg
+            bgs[cell] = bg
+        }
     }
 
     const fontImage = new Image()
+    fontImage.style.imageRendering = 'pixelated'
 
     fontImage.onload = function () {
         _font.width = fontImage.width
         _font.height = fontImage.height
 
         // Handle high-resolution (i.e. retina) displays.
-        const canvasWidth = _font.charWidth * _display.columns
-        const canvasHeight = _font.charHeight * _display.rows
+        const canvasWidth = _font.charWidth * columns
+        const canvasHeight = _font.charHeight * rows
         canvas.width = canvasWidth * _scale
         canvas.height = canvasHeight * _scale
         canvas.style.width = `${canvasWidth}px`
@@ -59,7 +74,12 @@ export default function Display ({ bg, columns, rows }) {
         const context = tint.getContext('2d')
 
         // draw the font
+        /*
+        context.mozImageSmoothingEnabled = false
+        context.webkitImageSmoothingEnabled = false
+        context.msImageSmoothingEnabled = false
         context.imageSmoothingEnabled = false
+        */
         context.drawImage(fontImage, 0, 0)
 
         // Tint it by filling in the existing alpha with the color.
@@ -73,15 +93,16 @@ export default function Display ({ bg, columns, rows }) {
 
 
     const draw = function (col, row, glyph, fg, bgColor=bg) {
-        // TODO
-        /*
-        const idx = Math.floor(row * _grid.columns + col)
-        _grid.fg[idx] = fg
-        _grid.bg[idx] = bgColor
-        _grid.data[idx] = glyph
-        changed.push(idx)
-        */
-        
+        const idx = Math.floor(row * columns + col)
+
+        if (fgs[idx] === fg && bgs[idx] === bgColor && data[idx] === glyph)
+            return
+
+        fgs[idx] = fg
+        bgs[idx] = bgColor
+        data[idx] = glyph
+        //changed.push(idx)
+
         let char = glyph
 
         // Remap it if it's a Unicode character.
@@ -106,7 +127,12 @@ export default function Display ({ bg, columns, rows }) {
             return
 
         const color = _getColorFont(fg)
-        
+
+        _context.mozImageSmoothingEnabled = false
+        _context.webkitImageSmoothingEnabled = false
+        _context.msImageSmoothingEnabled = false
+        _context.imageSmoothingEnabled = false
+
         _context.drawImage(
             color,
             sx,
@@ -150,9 +176,10 @@ export default function Display ({ bg, columns, rows }) {
 
 
     const clear = function () {
-        _context.fillStyle = 'whitesmoke'
-        _context.fillRect(0, 0, canvas.width, canvas.height)
+        //_context.fillStyle = 'whitesmoke'
+        //_context.fillRect(0, 0, canvas.width, canvas.height)
     }
+
 
     return {
         clear,
@@ -164,11 +191,11 @@ export default function Display ({ bg, columns, rows }) {
             /*
             for (let i=0; i < changed.length; i++) {
                 const idx = changed[i]
-                //const col = idx % grid.columns
-                //const row = idx / grid.columns | 0
-                cellEls[idx].style.backgroundColor = _grid.bg[idx]
-                cellEls[idx].style.color = _grid.fg[idx]
-                cellEls[idx].innerText = _grid.data[idx]
+                //const col = idx % columns
+                //const row = idx / columns | 0
+                cellEls[idx].style.backgroundColor = bgs[idx]
+                cellEls[idx].style.color = fgs[idx]
+                cellEls[idx].innerText = data[idx]
             }
 
             changed.length = 0
