@@ -202,7 +202,14 @@ const asciiMachine = createMachine({
 
                     const box = findBox(col, row, context.boxes)
                     if (box) {
-                        
+                       const idx = context.boxes.indexOf(box)
+                        context.boxes.splice(idx, 1)
+                        for (let i=context.lines.length-1; i >= 0; i--) {
+                            const line = context.lines[i]
+                            if (line.start.box === box || line.end.box === box)
+                                context.lines.splice(i, 1)
+                        }
+                        draw(context) 
                     }
                 }
             },
