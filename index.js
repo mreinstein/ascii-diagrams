@@ -128,7 +128,7 @@ const container = display.getContainer()
 document.body.appendChild(container)
 
 
-const [ labelToggle, moveToggle, lineToggle, boxToggle ] = document.querySelectorAll('button')
+const [ deleteButton, labelToggle, moveToggle, lineToggle, boxToggle ] = document.querySelectorAll('button')
 
 
 lineToggle.onclick = function () {
@@ -145,6 +145,10 @@ boxToggle.onclick = function () {
 
 labelToggle.onclick = function () {
     asciiService.send('TOGGLE_LABEL')
+}
+
+deleteButton.onclick = function () {
+    asciiService.send('DELETE')
 }
 
 const asciiMachine = createMachine({
@@ -170,15 +174,51 @@ const asciiMachine = createMachine({
     			INIT: 'drawing_box'
     		}
     	},
+
         normal: {
             on: {
                 TOGGLE_BOXDRAW: 'drawing_box',
                 TOGGLE_LABEL: 'labeling',
             	TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'moving_box',
+                DELETE: 'delete',
             	DRAW_BOX: 'drawing_box'
             }
         },
+
+        delete: {
+            entry: function (context) {
+                deleteButton.style.color = 'dodgerblue'
+
+                container.onmousedown = function (ev) {
+                    const [ col, row ] = display.eventToPosition(ev)
+                    const line = findLine(col, row, context.lines)
+                    if (line) {
+                        const idx = context.lines.indexOf(line)
+                        context.lines.splice(idx, 1)
+                        draw(context)
+                        return
+                    }
+
+                    const box = findBox(col, row, context.boxes)
+                    if (box) {
+                        
+                    }
+                }
+            },
+            exit: function (context) {
+                deleteButton.style.color = 'white'
+            },
+            on: {
+                TOGGLE_BOXDRAW: 'drawing_box',
+                TOGGLE_LABEL: 'labeling',
+                TOGGLE_LINEDRAW: 'drawing_line',
+                TOGGLE_MOVE: 'moving_box',
+                DELETE: 'normal',
+                DRAW_BOX: 'drawing_box'
+            }
+        },
+
         drawing_line: {
         	entry: function (context) {
                 lineToggle.style.color = 'dodgerblue'
@@ -251,6 +291,7 @@ const asciiMachine = createMachine({
         		//container.onmouseup = undefined
         	},
         	on: {
+                DELETE: 'delete',
                 TOGGLE_BOXDRAW: 'drawing_box',
                 TOGGLE_LABEL: 'labeling',
         		TOGGLE_LINEDRAW: 'normal',
@@ -338,6 +379,7 @@ const asciiMachine = createMachine({
                 labelToggle.style.color = 'white'
             },
             on: {
+                DELETE: 'delete',
                 TOGGLE_BOXDRAW: 'drawing_box',
                 TOGGLE_LABEL: 'normal',
                 TOGGLE_LINEDRAW: 'drawing_line',
@@ -387,6 +429,7 @@ const asciiMachine = createMachine({
                 moveToggle.style.color = 'white'
             },
             on: {
+                DELETE: 'delete',
                 TOGGLE_BOXDRAW: 'drawing_box',
                 TOGGLE_LABEL: 'labeling',
                 TOGGLE_LINEDRAW: 'drawing_line',
@@ -444,6 +487,7 @@ const asciiMachine = createMachine({
         		context.activeBox = undefined
         	},
         	on: {
+                DELETE: 'delete',
         		TOGGLE_BOXDRAW: 'normal',
                 TOGGLE_LABEL: 'labeling',
                 TOGGLE_LINEDRAW: 'drawing_line',
