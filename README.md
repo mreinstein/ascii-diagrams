@@ -6,7 +6,6 @@ some ideas I've been wanting to experiment with for a while
 ### TODOs
 
 #### important
-* line label
 * remove line
 * remove box
 * export

@@ -14,6 +14,17 @@ function findBox (col, row, boxes) {
 }
 
 
+function findLine (col, row, lines) {
+    for (const line of lines) {
+        const { start, end } = line
+        const cells = getPathCells(start, end)
+        for (const cell of cells)
+            if (cell.row === row && cell.col === col)
+                return line
+    }
+}
+
+
 // given a box and a point on the box, determine the
 // point on the edge of the box closest to the provided point
 //
@@ -198,7 +209,8 @@ const asciiMachine = createMachine({
                                 row: point.row - box.minRow,
                                 side: point.side
                             }
-                        }
+                        },
+                        labels: [ ]
         			}
 
         			container.onmousemove = function (ev) {
@@ -256,28 +268,49 @@ const asciiMachine = createMachine({
                     const [ col, row ] = display.eventToPosition(ev)
                     const box = findBox(col, row, context.boxes)
 
-                    textarea.style.display = box ? '' : 'none'
-                    if (!box) {
-                        if (context.labelingBox)
-                            context.labelingBox.box.labels.push(context.labelingBox)  
+                    const line = box ? undefined : findLine(col, row, context.lines)
+                   
+                    textarea.style.display = (box || line) ? '' : 'none'
+                    if (textarea.style.display === 'none') {
+                        if (context.labelingBox) {
+                            if (context.labelingBox.box)
+                                context.labelingBox.box.labels.push(context.labelingBox)
+                            else
+                                context.labelingBox.line.labels.push(context.labelingBox)
+                        }
                         context.labelingBox = undefined
                         textarea.value = ''
                         return
                     }
 
-                    console.log('about to set focus on textarea')
+                    // TODO: unclear why I need to do this on the next event tick...
                     setTimeout(function () {
                        textarea.focus() 
-                    })
-                    
-                    const relativeCol = col - box.minCol
-                    const relativeRow = row - box.minRow
+                    }, 0)
 
-                    context.labelingBox = {
-                        box,
-                        point: [ relativeCol, relativeRow ],
-                        text: ''
+                    if (box) {
+                        const relativeCol = col - box.minCol
+                        const relativeRow = row - box.minRow
+
+                        context.labelingBox = {
+                            box,
+                            point: [ relativeCol, relativeRow ],
+                            text: ''
+                        } 
+                    } else {
+                        const lineStartCol = line.start.box.minCol + line.start.point.col
+                        const lineStartRow = line.start.box.minRow + line.start.point.row
+
+                        const relativeCol = col - lineStartCol
+                        const relativeRow = row - lineStartRow
+
+                        context.labelingBox = {
+                            line,
+                            point: [ relativeCol, relativeRow ],
+                            text: ''
+                        }
                     }
+                    
                 }
 
                 textarea.onkeyup = function () {
@@ -286,12 +319,15 @@ const asciiMachine = createMachine({
                     context.labelingBox.text = textarea.value
                     draw(context)
                 }
-
                
             },
             exit: function (context) {
-                if (context.labelingBox)
-                    context.labelingBox.box.labels.push(context.labelingBox)
+                if (context.labelingBox) {
+                    if (context.labelingBox.box)
+                        context.labelingBox.box.labels.push(context.labelingBox)
+                    else
+                        context.labelingBox.line.labels.push(context.labelingBox)
+                }
 
                 const textarea = document.querySelector('textarea')
                 textarea.value = ''
@@ -462,8 +498,7 @@ function drawBox ({ minCol, minRow, maxCol, maxRow, fill, labels }) {
 }
 
 
-function drawPath (start, end) {
-
+function getPathCells (start, end) {
     // render the line using the relative line start if connected box is present
     const startPoint = start.box ? ({ col: start.box.minCol + start.point.col, row: start.box.minRow + start.point.row }) : start.point
 
@@ -505,6 +540,11 @@ function drawPath (start, end) {
                 cells.push({ col: end[0], row: r, direction })
     }
 
+    return cells
+}
+
+function drawPath ({ start, end, labels }) {
+    const cells = getPathCells(start, end)
 
     if (!cells.length)
         return
@@ -563,6 +603,9 @@ function drawPath (start, end) {
         lastDirection = cell.direction
         display.draw(cell.col, cell.row, char, 'black')
     })
+
+    for (const label of labels)
+        drawLabel(label)
 }
 
 
@@ -577,8 +620,16 @@ function clear () {
 
 
 function drawLabel (label) {
-    const startCol = label.box.minCol + label.point[0]
-    const startRow = label.box.minRow + label.point[1]
+    let startCol, startRow
+    if (label.box) {
+        startCol = label.box.minCol + label.point[0]
+        startRow = label.box.minRow + label.point[1]
+    } else {
+        const { line } = label
+        startCol = line.start.box.minCol + line.start.point.col + label.point[0]
+        startRow = line.start.box.minRow + line.start.point.row + label.point[1]
+    }
+
     display.drawText(startCol, startRow, label.text, 'black')
 }
 
@@ -602,12 +653,10 @@ function draw (context) {
 	}
 
     for (const line of context.lines)
-        drawPath(line.start, line.end)
+        drawPath(line)
 
 	if (context.activeLine)
-		drawPath(context.activeLine.start, context.activeLine.end)
-
-
+		drawPath(context.activeLine)
 
     if (context.labelingBox)
         drawLabel(context.labelingBox)
