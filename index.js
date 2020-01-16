@@ -72,6 +72,21 @@ function exportToAscii (context) {
     const boundingBox = getBoundingBox(context)
     console.log('bounding box::', boundingBox)
     // TODO: extract data from the grid
+    /*
+    // gets a subset of items from a 1d array
+    subset(offset) {
+        const result = [ ];
+        for (let { y } = offset, end = (offset.y+offset.height)-1, asc = offset.y <= end; asc ? y <= end : y >= end; asc ? y++ : y--) {
+          for (let { x } = offset, end1 = (offset.x+offset.width)-1, asc1 = offset.x <= end1; asc1 ? x <= end1 : x >= end1; asc1 ? x++ : x--) {
+            // 4 bytes per cell (rgba)
+            const idx = x + (this.cols * y);
+            result.push(this.cells[idx]);
+          }
+        }
+        return result;
+    }
+
+    */
     //       can render a unicode char like '\u263b'
     return result
 }
@@ -827,6 +842,7 @@ function animate () {
 }
 
 
+//setTimeout(animate, 1000)
 //animate()
 
 /*

@@ -185,6 +185,7 @@ export default function Display ({ bg, columns, rows }) {
         clear,
         draw,
         drawText,
+        export: () => data,
         getContainer: () => canvas,
         eventToPosition,
         render: function () {
