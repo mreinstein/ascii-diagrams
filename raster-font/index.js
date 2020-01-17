@@ -56,7 +56,6 @@ export default function Display ({ bg, columns, rows }) {
         canvas.height = canvasHeight * _scale
         canvas.style.width = `${canvasWidth}px`
         canvas.style.height = `${canvasHeight}px`
-        //clear()
     }
 
     fontImage.src = `/font/font_${_font.charWidth}_${_font.charHeight}.png`
@@ -118,9 +117,6 @@ export default function Display ({ bg, columns, rows }) {
         const idx = Math.floor(row * columns + col)
 
         const char = glyph
-
-        // Remap it if it's a Unicode character
-        //const char = unicodeMap[glyph] || glyph.charCodeAt(0)
 
         flags[idx] = renderIdx
 
@@ -200,9 +196,6 @@ export default function Display ({ bg, columns, rows }) {
             )
         }
 
-        //if (drawCount || clearCount)
-        //    console.log('drawn:', drawCount, 'cleared:', clearCount)
-        
         lastRenderIdx = renderIdx
         renderIdx++
     }

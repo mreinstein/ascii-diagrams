@@ -839,12 +839,9 @@ function animate () {
 
 
 setTimeout(animate, 200)
-//animate()
 
 /*
 window.addEventListener('resize', function () {
     // TODO: resize the grid based on screen dimensions
 })
-
-//display.drawText(5, 5, 'Here goes something!')
 */

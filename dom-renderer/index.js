@@ -80,12 +80,8 @@ export default function Display ({ bg, width, height }) {
 		getContainer: () => gridEl,
 		eventToPosition,
 		render: function () {
-			//console.log('rendering:', changed.length)
-			//console.log('r:', changed.length)
 			for (let i=0; i < changed.length; i++) {
 				const idx = changed[i]
-				//const col = idx % grid.columns
-				//const row = idx / grid.columns | 0
 				cellEls[idx].style.backgroundColor = _grid.bg[idx]
 				cellEls[idx].style.color = _grid.fg[idx]
 				cellEls[idx].innerText = _grid.data[idx]
