@@ -464,10 +464,14 @@ const asciiMachine = createMachine({
             entry: function (context) {
                 labelToggle.style.color = 'dodgerblue'
 
-
                 const textarea = document.querySelector('textarea')
 
                 container.onmousedown = function (ev) {
+                    if (context.labelingBox) {
+                        asciiService.send('TOGGLE_LABEL')
+                        return
+                    }
+
                     const [ col, row ] = display.eventToPosition(ev)
                     const box = findBox(col, row, context.boxes)
 
@@ -513,7 +517,6 @@ const asciiMachine = createMachine({
                             text: ''
                         }
                     }
-
                 }
 
                 textarea.onkeyup = function () {

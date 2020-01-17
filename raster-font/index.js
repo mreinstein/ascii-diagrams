@@ -212,7 +212,7 @@ export default function Display ({ bg, columns, rows }) {
     return {
         draw,
         drawText,
-        //export: () => data,
+        export: () =>  [ ...data ],
         getContainer: () => canvas,
         eventToPosition,
         render
