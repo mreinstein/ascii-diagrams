@@ -1,4 +1,3 @@
-//import Display          from '/node_modules/rot-js/lib/display/display.js'
 //import Display          from './dom-renderer/index.js'
 import CharCode         from './raster-font/char_code.js'
 import Display          from './raster-font/index.js'
@@ -8,19 +7,17 @@ import { createMachine,
 
 //Display.Rect.cache = true
 function expandBox (box, point) {
-    const [ col, row ] = point
+    if (point[0] < box.minCol)
+        box.minCol = point[0]
 
-    if (col < box.minCol)
-        box.minCol = col
+    if (point[1] < box.minRow)
+        box.minRow = point[1]
 
-    if (row < box.minRow)
-        box.minRow = row
+    if (point[0] > box.maxCol)
+        box.maxCol = point[0]
 
-    if (col > box.maxCol)
-        box.maxCol = col
-
-    if (row > box.maxRow)
-        box.maxRow = row
+    if (point[1] > box.maxRow)
+        box.maxRow = point[1]
 }
 
 
@@ -65,6 +62,53 @@ function getBoundingBox (context) {
 }
 
 
+function getPathCells (line) {
+    const { start, end } = line
+    // render the line using the relative line start if connected box is present
+    const startPoint = start.box ? ({ col: start.box.minCol + start.point.col, row: start.box.minRow + start.point.row }) : start.point
+
+    const endPoint = end.box ? ({ col: end.box.minCol + end.point.col, row: end.box.minRow + end.point.row }) : end.point
+
+    const path = pathLine(start.point.side, startPoint, endPoint)
+
+    // convert each line in the path into a set of cells
+    const cells = [ ]
+
+    for (let i=0; i < path.length-1; i++) {
+        const start = path[i]
+        const end = path[i+1]
+
+        const dx = end[0] - start[0]
+        const dy = end[1] - start[1]
+        let direction
+
+        if (dx !== 0)
+            direction = (dx > 0) ? 'right' : 'left'
+
+        if (dy !== 0)
+            direction = (dy > 0) ? 'down' : 'up'
+
+        if (direction === 'right')
+            for (let c=start[0]; c < end[0]; c++)
+                cells.push({ col: c, row: start[1], direction })
+
+        if (direction === 'left')
+            for (let c=start[0]; c >= end[0]; c--)
+                cells.push({ col: c, row: start[1], direction })
+
+        if (direction === 'down')
+            for (let r=start[1]; r < end[1]; r++)
+                cells.push({ col: end[0], row: r, direction })
+
+        if (direction === 'up')
+            for (let r=start[1]; r >= end[1]; r--)
+                cells.push({ col: end[0], row: r, direction })
+    }
+
+    return cells
+}
+
+
 function exportToAscii (context) {
     let result = ''
 
@@ -99,8 +143,7 @@ function findBox (col, row, boxes) {
 
 function findLine (col, row, lines) {
     for (const line of lines) {
-        const { start, end } = line
-        const cells = getPathCells(start, end)
+        const cells = getPathCells(line)
         for (const cell of cells)
             if (cell.row === row && cell.col === col)
                 return line
@@ -205,7 +248,6 @@ const display = Display({
     fontFamily: 'SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace',
 	spacing: 1
 })
-//display.render()
 
 const container = display.getContainer()
 document.body.appendChild(container)
@@ -314,7 +356,6 @@ const asciiMachine = createMachine({
                     if (line) {
                         const idx = context.lines.indexOf(line)
                         context.lines.splice(idx, 1)
-                        draw(context)
                         return
                     }
 
@@ -327,7 +368,6 @@ const asciiMachine = createMachine({
                             if (line.start.box === box || line.end.box === box)
                                 context.lines.splice(i, 1)
                         }
-                        draw(context)
                     }
                 }
             },
@@ -395,8 +435,6 @@ const asciiMachine = createMachine({
                         }
 
                         context.activeLine.end.box = box
-
-						draw(context)
 	        		}
         		}
 
@@ -405,7 +443,6 @@ const asciiMachine = createMachine({
         			     context.lines.push({ ...context.activeLine })
         			context.activeLine = undefined
         			container.onmousemove = undefined
-        			draw(context)
         		}
 
         	},
@@ -413,8 +450,6 @@ const asciiMachine = createMachine({
                 lineToggle.style.color = 'white'
         		context.activeLine = undefined
         		container.onmousemove = undefined
-        		//container.onmousedown = undefined
-        		//container.onmouseup = undefined
         	},
         	on: {
                 EXPORT: 'exporting',
@@ -485,7 +520,6 @@ const asciiMachine = createMachine({
                     if (!context.labelingBox)
                         return
                     context.labelingBox.text = textarea.value
-                    draw(context)
                 }
 
             },
@@ -543,8 +577,6 @@ const asciiMachine = createMachine({
 
                     context.movingBox.box.maxCol += dx
                     context.movingBox.box.maxRow += dy
-
-                    draw(context)
                 }
 
                 container.onmouseup = function (ev) {
@@ -583,7 +615,6 @@ const asciiMachine = createMachine({
                         return
 
         			context.activeBox.currentPos = display.eventToPosition(ev)
-					draw(context)
         		}
 
         		container.onmouseup = function (ev) {
@@ -604,8 +635,6 @@ const asciiMachine = createMachine({
 						context.boxes.push({  minCol, minRow, maxCol, maxRow, labels: [ ] })
 
                     context.activeBox = undefined
-
-					draw(context)
 				}
         	},
         	exit: function (context) {
@@ -627,10 +656,8 @@ const asciiMachine = createMachine({
     }
 })
 
-
 const asciiService = interpret(asciiMachine).start()
 asciiService.send('INIT')
-
 
 function drawBox ({ minCol, minRow, maxCol, maxRow, fill, labels }) {
 	//const boxPieces = [ '└', '┘', '┐', '┌', '-', '|' ]
@@ -664,61 +691,15 @@ function drawBox ({ minCol, minRow, maxCol, maxRow, fill, labels }) {
 	if (fill)
 		for (let r=minRow+1; r < maxRow; r++)
 			for (let c=minCol+1; c < maxCol; c++)
-				display.draw(c, r, '▉', 'white')
-
+				display.draw(c, r, CharCode.fullBlock, 'white') // '▉'
 
     for (const label of labels)
         drawLabel(label)
 }
 
 
-function getPathCells (start, end) {
-    // render the line using the relative line start if connected box is present
-    const startPoint = start.box ? ({ col: start.box.minCol + start.point.col, row: start.box.minRow + start.point.row }) : start.point
-
-    const endPoint = end.box ? ({ col: end.box.minCol + end.point.col, row: end.box.minRow + end.point.row }) : end.point
-
-    const path = pathLine(start.point.side, startPoint, endPoint)
-
-    // convert each line in the path into a set of cells
-    const cells = [ ]
-
-    for (let i=0; i < path.length-1; i++) {
-        const start = path[i]
-        const end = path[i+1]
-
-        const dx = end[0] - start[0]
-        const dy = end[1] - start[1]
-        let direction
-
-        if (dx !== 0)
-            direction = (dx > 0) ? 'right' : 'left'
-
-        if (dy !== 0)
-            direction = (dy > 0) ? 'down' : 'up'
-
-        if (direction === 'right')
-            for (let c=start[0]; c < end[0]; c++)
-                cells.push({ col: c, row: start[1], direction })
-
-        if (direction === 'left')
-            for (let c=start[0]; c >= end[0]; c--)
-                cells.push({ col: c, row: start[1], direction })
-
-        if (direction === 'down')
-            for (let r=start[1]; r < end[1]; r++)
-                cells.push({ col: end[0], row: r, direction })
-
-        if (direction === 'up')
-            for (let r=start[1]; r >= end[1]; r--)
-                cells.push({ col: end[0], row: r, direction })
-    }
-
-    return cells
-}
-
-function drawPath ({ start, end, labels }) {
-    const cells = getPathCells(start, end)
+function drawPath (line) {
+    const cells = getPathCells(line)
 
     if (!cells.length)
         return
@@ -726,9 +707,12 @@ function drawPath ({ start, end, labels }) {
     let lastDirection = cells[0].direction
 
     cells.forEach(function (cell, idx) {
-        let char = ''
+        let char
 
         if (idx === 0) {
+
+
+            // TODO: move this to the box drawing code to avoid double rendering characters
             if (cell.direction === 'left')
                 char = CharCode.boxDrawingsLightVerticalAndLeft //'┤'
             if (cell.direction === 'right')
@@ -737,6 +721,8 @@ function drawPath ({ start, end, labels }) {
                 char = CharCode.boxDrawingsLightUpAndHorizontal //'┴'
             if (cell.direction === 'down')
                 char = CharCode.boxDrawingsLightDownAndHorizontal //'┬'
+
+
         } else if (idx === cells.length - 1) {
             if (cell.direction === 'left')
                 char = CharCode.blackLeftPointingPointer //'◀'
@@ -778,15 +764,8 @@ function drawPath ({ start, end, labels }) {
         display.draw(cell.col, cell.row, char, '#333')
     })
 
-    for (const label of labels)
+    for (const label of line.labels)
         drawLabel(label)
-}
-
-
-function clear () {
-	for (let r=0; r < model.rows; r++)
-		for (let c=0; c < model.cols; c++)
-			display.draw(c, r, '.', 'whitesmoke')
 }
 
 
@@ -806,8 +785,6 @@ function drawLabel (label) {
 
 
 function draw (context) {
-    clear()
-
 	for (const box of context.boxes)
 		drawBox({ ...box, fill: true })
 
@@ -842,7 +819,7 @@ function animate () {
 }
 
 
-//setTimeout(animate, 1000)
+setTimeout(animate, 1000)
 //animate()
 
 /*

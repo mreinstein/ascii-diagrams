@@ -3,8 +3,7 @@
 some ideas I've been wanting to experiment with for a while
 
 
-### TODOs
-* only clear cells that haven't been updated since last time (keep a counter per cell)
+### TODO
 * export diagram
 * adjust canvas size on window resize
 * explore control plane
