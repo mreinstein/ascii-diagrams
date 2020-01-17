@@ -251,8 +251,8 @@ function pathLine (side, start, end) {
 
 
 const model = {
-	columns: 100,
-	rows: 50
+	columns: 150,
+	rows: 80
 }
 
 // defaults to 80x25
