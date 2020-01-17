@@ -1,11 +1,10 @@
-//import Display          from './dom-renderer/index.js'
 import CharCode         from './raster-font/char_code.js'
 import Display          from './raster-font/index.js'
 import { createMachine,
          interpret }    from '/node_modules/@xstate/fsm/es/index.js'
+import unicodeMap       from './raster-font/unicode_map.js'
 
 
-//Display.Rect.cache = true
 function expandBox (box, point) {
     if (point[0] < box.minCol)
         box.minCol = point[0]
@@ -47,7 +46,7 @@ function getBoundingBox (context) {
             line.end.box.minRow + line.end.point[1],
         ]
 
-        if (minCol === undefined) {
+        if (boundingBox.minCol === undefined) {
             boundingBox.minCol = start[0]
             boundingBox.minRow = start[1]
             boundingBox.maxCol = start[0]
@@ -114,24 +113,41 @@ function exportToAscii (context) {
 
     // find the bounding box that includes all non-whitespace cells
     const boundingBox = getBoundingBox(context)
-    console.log('bounding box::', boundingBox)
-    // TODO: extract data from the grid
-    /*
-    // gets a subset of items from a 1d array
-    subset(offset) {
-        const result = [ ];
-        for (let { y } = offset, end = (offset.y+offset.height)-1, asc = offset.y <= end; asc ? y <= end : y >= end; asc ? y++ : y--) {
-          for (let { x } = offset, end1 = (offset.x+offset.width)-1, asc1 = offset.x <= end1; asc1 ? x <= end1 : x >= end1; asc1 ? x++ : x--) {
-            // 4 bytes per cell (rgba)
-            const idx = x + (this.cols * y);
-            result.push(this.cells[idx]);
-          }
+
+    const data = display.export()
+
+    const mapping = { }
+    mapping[CharCode.fullBlock] = ' '
+    mapping[CharCode.period] = ' '
+    mapping[CharCode.boxDrawingsLightUpAndRight] = '└'
+    mapping[CharCode.boxDrawingsLightUpAndLeft] = '┘'
+    mapping[CharCode.boxDrawingsLightDownAndLeft] = '┐'
+    mapping[CharCode.boxDrawingsLightDownAndRight] = '┌'
+    mapping[CharCode.boxDrawingsLightHorizontal] = '-'
+    mapping[CharCode.boxDrawingsLightVertical] = '|'
+
+    mapping[CharCode.boxDrawingsLightVerticalAndLeft] = '┤'
+    mapping[CharCode.boxDrawingsLightVerticalAndRight] = '├'
+    mapping[CharCode.boxDrawingsLightUpAndHorizontal] = '┴'
+    mapping[CharCode.boxDrawingsLightDownAndHorizontal] = '┬'
+
+    mapping[CharCode.blackLeftPointingPointer] = '◀'
+    mapping[CharCode.blackRightPointingPointer] = '▶'
+    mapping[CharCode.blackUpPointingTriangle] = '▲'
+    mapping[CharCode.blackDownPointingTriangle] = '▼'
+    
+
+    for (let row=boundingBox.minRow; row <= boundingBox.maxRow; row++) {
+        for (let col=boundingBox.minCol; col <= boundingBox.maxCol; col++) {
+            const idx = row * model.columns + col
+            if (mapping[data[idx]])
+                result += mapping[data[idx]]
+            else
+                result += data[idx]
         }
-        return result;
+        result += '\n'
     }
 
-    */
-    //       can render a unicode char like '\u263b'
     return result
 }
 
@@ -235,7 +251,7 @@ function pathLine (side, start, end) {
 
 
 const model = {
-	cols: 100,
+	columns: 100,
 	rows: 50
 }
 
@@ -243,7 +259,7 @@ const model = {
 const display = Display({
 	bg: '#fff',
 	rows: model.rows,
-	columns: model.cols,
+	columns: model.columns,
 	fontSize: 12,
     fontFamily: 'SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace',
 	spacing: 1
@@ -822,7 +838,7 @@ function animate () {
 }
 
 
-setTimeout(animate, 1000)
+setTimeout(animate, 200)
 //animate()
 
 /*

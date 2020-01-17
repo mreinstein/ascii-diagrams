@@ -59,7 +59,7 @@ export default function Display ({ bg, columns, rows }) {
         //clear()
     }
 
-    fontImage.src = `font_${_font.charWidth}_${_font.charHeight}.png`
+    fontImage.src = `/font/font_${_font.charWidth}_${_font.charHeight}.png`
 
 
     const _getColorFont = function (color) {
@@ -142,7 +142,6 @@ export default function Display ({ bg, columns, rows }) {
 
             if (flags[idx] === renderIdx && changed[idx]) {
                 // draw the cell
-                char = data[idx]
                 char = unicodeMap[data[idx]] || data[idx].charCodeAt(0)
                 bgColor = bgs[idx]
                 fg = fgs[idx]
@@ -179,7 +178,7 @@ export default function Display ({ bg, columns, rows }) {
 
             // Don't bother drawing empty characters
             if (char == 0 || char == CharCode.space)
-                return
+                continue
 
             const color = _getColorFont(fg)
 

@@ -4,7 +4,6 @@ some ideas I've been wanting to experiment with for a while
 
 
 ### TODO
-* export diagram
 * adjust canvas size on window resize
 * explore control plane
 * make complicated states like line_drawing and labeling nested state machines

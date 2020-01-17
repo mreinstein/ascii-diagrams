@@ -32,10 +32,10 @@
 
       @font-face {
       font-family: 'DejaVuSansMono';
-        src: url('DejaVuSansMono.eot');
-        src: url('DejaVuSansMono.eot?#iefix') format('eot'),
-           url('DejaVuSansMono.woff') format('woff'),
-           url('DejaVuSansMono.ttf') format('truetype');
+        src: url('/font/DejaVuSansMono.eot');
+        src: url('/font/DejaVuSansMono.eot?#iefix') format('eot'),
+           url('/font/DejaVuSansMono.woff') format('woff'),
+           url('/font/DejaVuSansMono.ttf') format('truetype');
       }
 
       .unicodetiles {
@@ -81,7 +81,7 @@
   <button style="position: fixed; bottom: 0px; right: 100px;">draw box</button>
 
   <dialog id="export">
-      <textarea style="height: 50vh;"></textarea>
+      <textarea style="height: 50vh; font-family: monospace; white-space: pre;" readonly></textarea>
   </dialog>
   <script type="module" src="./index.js"></script>
 </body>
