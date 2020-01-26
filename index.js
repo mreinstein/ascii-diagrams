@@ -135,7 +135,7 @@ function exportToAscii (context) {
     mapping[CharCode.blackRightPointingPointer] = '▶'
     mapping[CharCode.blackUpPointingTriangle] = '▲'
     mapping[CharCode.blackDownPointingTriangle] = '▼'
-    
+
 
     for (let row=boundingBox.minRow; row <= boundingBox.maxRow; row++) {
         for (let col=boundingBox.minCol; col <= boundingBox.maxCol; col++) {
@@ -298,7 +298,7 @@ exportButton.onclick = function () {
 
 
 const asciiMachine = createMachine({
-	initial: 'uninitialized',
+	initial: 'normal',
 
     // object containing all shared state for this machine
     context: {
@@ -315,12 +315,6 @@ const asciiMachine = createMachine({
     },
 
     states: {
-    	uninitialized: {
-    		on: {
-    			INIT: 'drawing_box'
-    		}
-    	},
-
         normal: {
             on: {
                 EXPORT: 'exporting',
@@ -676,7 +670,7 @@ const asciiMachine = createMachine({
 })
 
 const asciiService = interpret(asciiMachine).start()
-asciiService.send('INIT')
+
 
 function drawBox ({ minCol, minRow, maxCol, maxRow, fill, labels }) {
 	//const boxPieces = [ '└', '┘', '┐', '┌', '-', '|' ]
