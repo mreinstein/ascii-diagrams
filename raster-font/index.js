@@ -102,11 +102,11 @@ export default function Display ({ bg, columns, rows }) {
         let x, y
 
         if ('touches' in e) {
-            x = e.touches[0].clientX
-            y = e.touches[0].clientY
+            x = e.touches[0].offsetX
+            y = e.touches[0].offsetY
         } else {
-            x = e.clientX
-            y = e.clientY
+            x = e.offsetX
+            y = e.offsetY
         }
 
         return [ x / _font.charWidth | 0, y / _font.charHeight | 0]
