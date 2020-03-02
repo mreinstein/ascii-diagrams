@@ -1575,15 +1575,16 @@ void main() {
         }
 
         for (const line of context.lines) {
+
             const start = [
                 line.start.box.minCol + line.start.point[0],
                 line.start.box.minRow + line.start.point[1],
             ];
 
-            const end = [
+            const end = line.end.box ? [
                 line.end.box.minCol + line.end.point[0],
                 line.end.box.minRow + line.end.point[1],
-            ];
+            ] : [ line.end.point.col, line.end.point.row ];
 
             if (boundingBox.minCol === undefined) {
                 boundingBox.minCol = start[0];
