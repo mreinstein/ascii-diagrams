@@ -25,10 +25,11 @@ npm start
 
 
 ### TODO
+* nicer looking controls
+* provide info area to display context information on controls
 * adjust canvas size on window resize
-* explore control plane
 * make complicated states like line_drawing and labeling nested state machines
-* import
 * resize box
 * move line
 * undo/redo
+* explore control plane concept
