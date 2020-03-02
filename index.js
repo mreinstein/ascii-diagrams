@@ -1,276 +1,20 @@
-import CharCode         from './raster-font/char_code.js'
-import Display          from './raster-font/index.js'
+import { Display }       from 'rot-js'
 import { createMachine,
-         interpret }    from '/node_modules/@xstate/fsm/es/index.js'
-import unicodeMap       from './raster-font/unicode_map.js'
-
-
-function expandBox (box, point) {
-    if (point[0] < box.minCol)
-        box.minCol = point[0]
-
-    if (point[1] < box.minRow)
-        box.minRow = point[1]
-
-    if (point[0] > box.maxCol)
-        box.maxCol = point[0]
-
-    if (point[1] > box.maxRow)
-        box.maxRow = point[1]
-}
-
-
-function getBoundingBox (context) {
-   const boundingBox = { }
-
-    for (const box of context.boxes) {
-        if (boundingBox.minCol === undefined) {
-            boundingBox.minCol = box.minCol
-            boundingBox.minRow = box.minRow
-            boundingBox.maxCol = box.maxCol
-            boundingBox.maxRow = box.maxRow
-        }
-
-        expandBox(boundingBox, [ box.minCol, box.minRow ])
-        expandBox(boundingBox, [ box.maxCol, box.maxRow ])
-    }
-
-    for (const line of context.lines) {
-        const start = [
-            line.start.box.minCol + line.start.point[0],
-            line.start.box.minRow + line.start.point[1],
-        ]
-
-        const end = [
-            line.end.box.minCol + line.end.point[0],
-            line.end.box.minRow + line.end.point[1],
-        ]
-
-        if (boundingBox.minCol === undefined) {
-            boundingBox.minCol = start[0]
-            boundingBox.minRow = start[1]
-            boundingBox.maxCol = start[0]
-            boundingBox.maxRow = start[1]
-        }
-
-        expandBox(boundingBox, start)
-        expandBox(boundingBox, end)
-    }
-
-    return boundingBox
-}
-
-
-function getPathCells (line) {
-    const { start, end } = line
-    // render the line using the relative line start if connected box is present
-    const startPoint = start.box ? ({ col: start.box.minCol + start.point.col, row: start.box.minRow + start.point.row }) : start.point
-
-    const endPoint = end.box ? ({ col: end.box.minCol + end.point.col, row: end.box.minRow + end.point.row }) : end.point
-
-    const path = pathLine(start.point.side, startPoint, endPoint)
-
-    // convert each line in the path into a set of cells
-    const cells = [ ]
-
-    for (let i=0; i < path.length-1; i++) {
-        const start = path[i]
-        const end = path[i+1]
-
-        const dx = end[0] - start[0]
-        const dy = end[1] - start[1]
-        let direction
-
-        if (dx !== 0)
-            direction = (dx > 0) ? 'right' : 'left'
-
-        if (dy !== 0)
-            direction = (dy > 0) ? 'down' : 'up'
-
-        if (direction === 'right')
-            for (let c=start[0]; c < end[0]; c++)
-                cells.push({ col: c, row: start[1], direction })
-
-        if (direction === 'left')
-            for (let c=start[0]; c >= end[0]; c--)
-                cells.push({ col: c, row: start[1], direction })
-
-        if (direction === 'down')
-            for (let r=start[1]; r < end[1]; r++)
-                cells.push({ col: end[0], row: r, direction })
-
-        if (direction === 'up')
-            for (let r=start[1]; r >= end[1]; r--)
-                cells.push({ col: end[0], row: r, direction })
-    }
-
-    return cells
-}
-
-
-function exportToAscii (context) {
-    let result = ''
-
-    // find the bounding box that includes all non-whitespace cells
-    const boundingBox = getBoundingBox(context)
-
-    const data = display.export()
-
-    const mapping = { }
-    mapping[CharCode.fullBlock] = ' '
-    mapping[CharCode.period] = ' '
-    mapping[CharCode.boxDrawingsLightUpAndRight] = '└'
-    mapping[CharCode.boxDrawingsLightUpAndLeft] = '┘'
-    mapping[CharCode.boxDrawingsLightDownAndLeft] = '┐'
-    mapping[CharCode.boxDrawingsLightDownAndRight] = '┌'
-    mapping[CharCode.boxDrawingsLightHorizontal] = '-'
-    mapping[CharCode.boxDrawingsLightVertical] = '|'
-
-    mapping[CharCode.boxDrawingsLightVerticalAndLeft] = '┤'
-    mapping[CharCode.boxDrawingsLightVerticalAndRight] = '├'
-    mapping[CharCode.boxDrawingsLightUpAndHorizontal] = '┴'
-    mapping[CharCode.boxDrawingsLightDownAndHorizontal] = '┬'
-
-    mapping[CharCode.blackLeftPointingPointer] = '◀'
-    mapping[CharCode.blackRightPointingPointer] = '▶'
-    mapping[CharCode.blackUpPointingTriangle] = '▲'
-    mapping[CharCode.blackDownPointingTriangle] = '▼'
-
-
-    for (let row=boundingBox.minRow; row <= boundingBox.maxRow; row++) {
-        for (let col=boundingBox.minCol; col <= boundingBox.maxCol; col++) {
-            const idx = row * model.columns + col
-            if (mapping[data[idx]])
-                result += mapping[data[idx]]
-            else
-                result += data[idx]
-        }
-        result += '\n'
-    }
-
-    return result
-}
-
-
-function findBox (col, row, boxes) {
-    return boxes.find((b) => col >= b.minCol && col <= b.maxCol && row >= b.minRow && row <= b.maxRow)
-}
-
-
-function findLine (col, row, lines) {
-    for (const line of lines) {
-        const cells = getPathCells(line)
-        for (const cell of cells)
-            if (cell.row === row && cell.col === col)
-                return line
-    }
-}
-
-
-// given a box and a point on the box, determine the
-// point on the edge of the box closest to the provided point
-//
-// @param Object box { minCol, minRow, maxCol, maxRow }
-function findClosestPointOnBox (col, row, box) {
-    // determine the box side that is closest
-    let delta = Math.abs(col - box.minCol)
-    let side = 'left'
-
-    if (Math.abs(col - box.maxCol) < delta) {
-        delta = Math.abs(col - box.maxCol)
-        side = 'right'
-    }
-
-    if (Math.abs(row - box.maxRow) < delta) {
-        delta = Math.abs(row - box.maxRow)
-        side = 'bottom'
-    }
-
-    if (Math.abs(row - box.minRow) < delta) {
-        delta = Math.abs(row - box.minRow)
-        side = 'top'
-    }
-
-    if (side === 'left')
-        return { col: box.minCol, row, side }
-
-    if (side === 'right')
-        return { col: box.maxCol, row, side }
-
-    if (side === 'bottom')
-        return { col, row: box.maxRow, side }
-
-    return { col, row: box.minRow, side }
-}
-
-
-function getArrowDirection (path) {
-    const [ col, row ] = path[path.length-2]
-    const [ col2, row2 ] = path[path.length-1]
-
-    const dx = col2 - col
-    const dy = row2 - row
-
-    if (dx > 0)
-        return 'right'
-
-    if (dx < 0)
-        return 'left'
-
-    if (dy > 0)
-        return 'bottom'
-
-    return 'top'
-}
-
-
-// given a start position and end position, generate a path of points
-// @param string side which side of the box the line emits from
-function pathLine (side, start, end) {
-    const { col, row } = start
-    const col2 = end.col
-    const row2 = end.row
-
-    const path = [ [ col, row ] ]
-
-    const dx = col2 - col
-    const dy = row2 - row
-
-    if (dx !== 0 && dy !== 0) {
-        // determine where the elbow joint should go
-        if (side === 'top' || side === 'bottom')
-            path.push([ col, row2 ])
-        else
-            path.push([ col2, row ])
-    }
-
-    path.push([ col2, row2 ])
-
-    return path
-}
+         interpret }     from '@xstate/fsm'
+import exportToAscii     from './export.js'
+import closestPointOnBox from './find-point-on-box.js'
+import getPathCells      from './get-path-cells.js'
+import tileMap           from './tile-map.js'
 
 
 const model = {
-	columns: 150,
-	rows: 80
+    columns: 150,
+    rows: 80
 }
 
-// defaults to 80x25
-const display = Display({
-	bg: '#fff',
-	rows: model.rows,
-	columns: model.columns,
-	fontSize: 12,
-    fontFamily: 'SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace',
-	spacing: 1
-})
-
-const container = display.getContainer()
-document.body.appendChild(container)
-
+let display, container
 
 const [ exportButton, deleteButton, labelToggle, moveToggle, lineToggle, boxToggle ] = document.querySelectorAll('button')
-
 
 lineToggle.onclick = function () {
     asciiService.send('TOGGLE_LINEDRAW')
@@ -333,7 +77,7 @@ const asciiMachine = createMachine({
                 const dialog = document.querySelector('dialog')
 
                 const textarea = dialog.querySelector('textarea')
-                const exportedResult = exportToAscii(context)
+                const exportedResult = exportToAscii(context, model)
                 const columnCount = exportedResult.indexOf('\n')
                 textarea.setAttribute('cols', columnCount)
                 textarea.value = exportedResult
@@ -405,7 +149,7 @@ const asciiMachine = createMachine({
                     if (!box)
                         return
 
-                    const point = findClosestPointOnBox(col, row, box)
+                    const point = closestPointOnBox(col, row, box)
 
         			context.activeLine = {
                         start: {
@@ -434,7 +178,7 @@ const asciiMachine = createMachine({
                         const box = findBox(col, row, context.boxes)
 
                         if (box) {
-                            const point = findClosestPointOnBox(col, row, box)
+                            const point = closestPointOnBox(col, row, box)
                             context.activeLine.end.point = {
                                 col: point.col - box.minCol,
                                 row: point.row - box.minRow,
@@ -672,39 +416,43 @@ const asciiMachine = createMachine({
 const asciiService = interpret(asciiMachine).start()
 
 
+function findBox (col, row, boxes) {
+    return boxes.find((b) => col >= b.minCol && col <= b.maxCol && row >= b.minRow && row <= b.maxRow)
+}
+
+
+function findLine (col, row, lines) {
+    for (const line of lines) {
+        const cells = getPathCells(line)
+        for (const cell of cells)
+            if (cell.row === row && cell.col === col)
+                return line
+    }
+}
+
+
 function drawBox ({ minCol, minRow, maxCol, maxRow, fill, labels }) {
-	//const boxPieces = [ '└', '┘', '┐', '┌', '-', '|' ]
-    const boxPieces = [
-        CharCode.boxDrawingsLightUpAndRight, // '└',
-        CharCode.boxDrawingsLightUpAndLeft, //'┘',
-        CharCode.boxDrawingsLightDownAndLeft, //'┐',
-        CharCode.boxDrawingsLightDownAndRight, //'┌',
-
-        CharCode.boxDrawingsLightHorizontal, //'-'
-        CharCode.boxDrawingsLightVertical // '|'
-    ]
-
 	const borderColor = '#333'
 
-	display.draw(minCol, minRow, boxPieces[3], borderColor)
-	display.draw(maxCol, maxRow, boxPieces[1], borderColor)
-	display.draw(maxCol, minRow, boxPieces[2], borderColor)
-	display.draw(minCol, maxRow, boxPieces[0], borderColor)
+	display.draw(minCol, minRow, '┌', borderColor)
+	display.draw(maxCol, maxRow, '┘', borderColor)
+	display.draw(maxCol, minRow, '┐', borderColor)
+	display.draw(minCol, maxRow, '└', borderColor)
 
 	for (let c=minCol+1; c < maxCol; c++) {
-		display.draw(c, maxRow, boxPieces[4], borderColor)
-		display.draw(c, minRow, boxPieces[4], borderColor)
+		display.draw(c, maxRow, '─', borderColor)
+		display.draw(c, minRow, '─', borderColor)
 	}
 
 	for (let r=minRow+1; r < maxRow; r++) {
-		display.draw(minCol, r, boxPieces[5], borderColor)
-		display.draw(maxCol, r, boxPieces[5], borderColor)
+		display.draw(minCol, r, '│', borderColor)
+		display.draw(maxCol, r, '│', borderColor)
 	}
 
 	if (fill)
 		for (let r=minRow+1; r < maxRow; r++)
 			for (let c=minCol+1; c < maxCol; c++)
-				display.draw(c, r, CharCode.fullBlock, 'white') // '▉'
+				display.draw(c, r, '█', 'white') // CharCode.fullBlock
 
     for (const label of labels)
         drawLabel(label)
@@ -724,53 +472,52 @@ function drawPath (line) {
 
         if (idx === 0) {
 
-
             // TODO: move this to the box drawing code to avoid double rendering characters
             if (cell.direction === 'left')
-                char = CharCode.boxDrawingsLightVerticalAndLeft //'┤'
+                char = '┤' //CharCode.boxDrawingsLightVerticalAndLeft //
             if (cell.direction === 'right')
-                char = CharCode.boxDrawingsLightVerticalAndRight //'├'
+                char = '├' //CharCode.boxDrawingsLightVerticalAndRight //
             if (cell.direction === 'up')
-                char = CharCode.boxDrawingsLightUpAndHorizontal //'┴'
+                char = '┴' //CharCode.boxDrawingsLightUpAndHorizontal //
             if (cell.direction === 'down')
-                char = CharCode.boxDrawingsLightDownAndHorizontal //'┬'
+                char = '┬' //CharCode.boxDrawingsLightDownAndHorizontal //
 
 
         } else if (idx === cells.length - 1) {
             if (cell.direction === 'left')
-                char = CharCode.blackLeftPointingPointer //'◀'
+                char = '◀' //CharCode.blackLeftPointingPointer //
             if (cell.direction === 'right')
-                char = CharCode.blackRightPointingPointer //'▶'
+                char = '▶' //CharCode.blackRightPointingPointer //
             if (cell.direction === 'up')
-                char = CharCode.blackUpPointingTriangle //'▲'
+                char = '▲' //CharCode.blackUpPointingTriangle //
             if (cell.direction === 'down')
-                char = CharCode.blackDownPointingTriangle //'▼'
+                char = '▼' // CharCode.blackDownPointingTriangle //
 
         } else if (lastDirection !== cell.direction) {
             if (lastDirection === 'right' && cell.direction === 'up')
-                char = CharCode.boxDrawingsLightUpAndLeft //'┘'
+                char = '┘' //CharCode.boxDrawingsLightUpAndLeft //
             if (lastDirection === 'down' && cell.direction === 'left')
-                char = CharCode.boxDrawingsLightUpAndLeft //'┘'
+                char = '┘' //CharCode.boxDrawingsLightUpAndLeft //
 
             if (lastDirection === 'left' && cell.direction === 'up')
-                char = CharCode.boxDrawingsLightUpAndRight //char = '└'
+                char = '└' // CharCode.boxDrawingsLightUpAndRight //char =
             if (lastDirection === 'down' && cell.direction === 'right')
-                char = CharCode.boxDrawingsLightUpAndRight //char = '└'
+                char = '└' // CharCode.boxDrawingsLightUpAndRight //char =
 
             if (lastDirection === 'left' && cell.direction === 'down')
-                char = CharCode.boxDrawingsLightDownAndRight //'┌'
+                char = '┌' //CharCode.boxDrawingsLightDownAndRight //
             if (lastDirection === 'up' && cell.direction === 'right')
-                char = CharCode.boxDrawingsLightDownAndRight //'┌',
+                char = '┌' // CharCode.boxDrawingsLightDownAndRight //
 
             if (lastDirection === 'right' && cell.direction === 'down')
-                char = CharCode.boxDrawingsLightDownAndLeft //'┐'
+                char = '┐' // CharCode.boxDrawingsLightDownAndLeft //
             if (lastDirection === 'up' && cell.direction === 'left')
-                char = CharCode.boxDrawingsLightDownAndLeft //'┐'
+                char = '┐' //CharCode.boxDrawingsLightDownAndLeft //
         } else {
             if (cell.direction === 'left' || cell.direction === 'right')
-                char = CharCode.boxDrawingsLightHorizontal //'-'
+                char = '─' // CharCode.boxDrawingsLightHorizontal //
             if (cell.direction === 'up' || cell.direction === 'down')
-                char = CharCode.boxDrawingsLightVertical //'|'
+                char = '│' // CharCode.boxDrawingsLightVertical //
         }
 
         lastDirection = cell.direction
@@ -793,11 +540,26 @@ function drawLabel (label) {
         startRow = line.start.box.minRow + line.start.point.row + label.point[1]
     }
 
-    display.drawText(startCol, startRow, label.text, '#333')
+    drawText(startCol, startRow, label.text, '#333')
+}
+
+
+function drawText (startCol, startRow, str, fg) {
+    const rows = str.split('\n')
+    let currentRow = startRow
+
+    for (const row of rows) {
+        for (let i=0; i < row.length; i++)
+            display.draw(startCol + i, currentRow, row[i], fg)
+
+        currentRow++
+    }
 }
 
 
 function draw (context) {
+    display.clear();
+
 	for (const box of context.boxes)
 		drawBox({ ...box, fill: true })
 
@@ -821,8 +583,6 @@ function draw (context) {
 
     if (context.labelingBox)
         drawLabel(context.labelingBox)
-
-    display.render()
 }
 
 
@@ -832,9 +592,67 @@ function animate () {
 }
 
 
-setTimeout(animate, 200)
+const font = {
+    width: 8,
+    height: 10
+}
+
+const img = new Image();
+img.src = `/font/font_${font.width}_${font.height}.png`;
+img.onload = _ => {
+
+    for (const glyph in tileMap) {
+        const idx = tileMap[glyph];
+
+        // the font files always have 32 columns
+        const sx = (idx % 32) * font.width;
+        const sy = (idx / 32 | 0) * font.height;
+
+        tileMap[glyph] = [ sx, sy ];
+    }
+
+    display = new Display({
+        bg: 'white',
+        layout: 'tile-gl',
+        tileColorize: true,
+        tileWidth: font.width,
+        tileHeight: font.height,
+        tileSet: img,
+        tileMap,
+
+        // defaults to 80x25
+        width: model.columns,
+        height: model.rows
+    })
+
+    container = display.getContainer()
+    container.style.imageRendering = 'pixelated'
+    document.body.appendChild(container)
+    animate();
+}
+
 
 /*
+function getArrowDirection (path) {
+    const [ col, row ] = path[path.length-2]
+    const [ col2, row2 ] = path[path.length-1]
+
+    const dx = col2 - col
+    const dy = row2 - row
+
+    if (dx > 0)
+        return 'right'
+
+    if (dx < 0)
+        return 'left'
+
+    if (dy > 0)
+        return 'bottom'
+
+    return 'top'
+}
+
+
 window.addEventListener('resize', function () {
     // TODO: resize the grid based on screen dimensions
 })
