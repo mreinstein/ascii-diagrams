@@ -14,7 +14,7 @@ const model = {
 
 let display, container
 
-const [ exportButton, deleteButton, moveToggle, boxToggle, labelToggle, lineToggle ] = document.querySelectorAll('button')
+const [ boxToggle, labelToggle, lineToggle, moveToggle, deleteButton, exportButton ] = document.querySelectorAll('button')
 
 lineToggle.onclick = function () {
     asciiService.send('TOGGLE_LINEDRAW')

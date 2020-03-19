@@ -21,24 +21,26 @@
       button {
         border: none;
         color: black;
-        padding: 6px;
-        margin: 2px;
+        padding: 0;
+        margin: 4px;
         cursor: pointer;
         text-transform: uppercase;
         user-select: none;
       }
 
+      button:hover {
+        color: deeppink;
+      }
+
       canvas {
-        border: 1px solid #999;
+        border: none;
       }
 
       h4 {
         font: 800 11px system-ui;
         margin: 2px;
-        padding-right: 6px;
         padding: 0;
-        padding-right: 6px;
-        padding-top: 12px;
+        padding-top: 14px;
         text-decoration: underline;
         text-transform: uppercase;
       }
@@ -51,6 +53,7 @@
         flex-direction: column;
         align-items: flex-end;
         background-color: rgba(255,255,255, 0.8);
+        padding-right: 14px;
       }
 
   </style>
@@ -60,18 +63,18 @@
   <textarea placeholder="my text goes here"  style="display: none; position: fixed; bottom: 0px; left: 0; width: 50%; height: 100px;"></textarea>
 
   <div id="controls">
-    <button>export</button>
-
-    <button>delete</button>
-
-    <h4>move</h4>
-    <button>box</button>
 
     <h4>draw</h4>
     <button>box</button>
     <button>label</button>
     <button>line</button>
+
+    <h4>move</h4>
+    <button>box</button>
     
+    <h4>misc</h4>
+    <button>delete</button>
+    <button>export</button>
 
   </div>
 
