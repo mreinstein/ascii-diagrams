@@ -26,11 +26,10 @@ npm start
 
 ### TODO
 * provide info area to display context information on controls
-* adjust canvas size on window resize
 * keyboard shortcuts
 * make complicated states like line_drawing and labeling nested state machines
 * resize box
-* overlay hints (e.g., when resizing a box, highlight the draggable corners of the box)
+* overlay active control hints (e.g., when resizing a box, highlight the draggable corners of the box)
 * move line
 * undo/redo
 * explore control plane concept

@@ -7,9 +7,14 @@ import getPathCells      from './get-path-cells.js'
 import tileMap           from './tile-map.js'
 
 
+const font = {
+    width: 8,
+    height: 10
+}
+
 const model = {
-    columns: 150,
-    rows: 80
+    columns: Math.ceil(window.outerWidth / font.width),
+    rows: Math.ceil(window.outerHeight / font.height)
 }
 
 let display, container
@@ -591,11 +596,6 @@ function animate () {
 	requestAnimationFrame(animate)
 }
 
-
-const font = {
-    width: 8,
-    height: 10
-}
 
 const img = new Image();
 img.src = `/font/font_${font.width}_${font.height}.png`;
