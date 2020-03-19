@@ -25,10 +25,9 @@ npm start
 
 
 ### TODO
-* resize box action
-* overlay active control indicators (e.g., when resizing a box, highlight the draggable corners)
+* implement move label
 * keyboard shortcuts
 * make complicated states like line_drawing and labeling nested state machines
-* move line action
+* implement move line action
 * undo/redo
 * explore control plane concept

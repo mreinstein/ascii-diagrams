@@ -19,7 +19,7 @@ const model = {
 
 let display, container
 
-const [ boxToggle, labelToggle, lineToggle, moveToggle, deleteButton, exportButton ] = document.querySelectorAll('button')
+const [ boxToggle, labelToggle, lineToggle, moveToggle, resizeBoxButton, deleteButton, exportButton ] = document.querySelectorAll('button')
 const hints = document.querySelector('#hints')
 
 lineToggle.onclick = function () {
@@ -39,12 +39,25 @@ moveToggle.onclick = function () {
 }
 
 moveToggle.onmouseenter = function () {
-    hints.innerText = 'Move a box.'
+    hints.innerText = 'Move an existing box.'
 }
 
 moveToggle.onmouseleave = function () {
     hints.innerText = ''
 }
+
+resizeBoxButton.onclick = function () {
+    asciiService.send('TOGGLE_RESIZEBOX')
+}
+
+resizeBoxButton.onmouseenter = function () {
+    hints.innerText = 'Resize an existing box.'
+}
+
+resizeBoxButton.onmouseleave = function () {
+    hints.innerText = ''
+}
+
 
 boxToggle.onclick = function () {
     asciiService.send('TOGGLE_BOXDRAW')
@@ -104,12 +117,15 @@ const asciiMachine = createMachine({
         activeLine: undefined,
 
         movingBox: undefined,
+        resizingBox: undefined,
 
         labelingBox: undefined,
 
         boxes: [ ],
         lines: [ ],
-	    currentPos: undefined
+	    currentPos: undefined,
+
+        boxResizing: false
     },
 
     states: {
@@ -121,7 +137,8 @@ const asciiMachine = createMachine({
             	TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'moving_box',
                 DELETE: 'delete',
-            	DRAW_BOX: 'drawing_box'
+            	DRAW_BOX: 'drawing_box',
+                TOGGLE_RESIZEBOX: 'resizing_box'
             }
         },
 
@@ -150,7 +167,8 @@ const asciiMachine = createMachine({
                 TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'moving_box',
                 DELETE: 'delete',
-                DRAW_BOX: 'drawing_box'
+                DRAW_BOX: 'drawing_box',
+                TOGGLE_RESIZEBOX: 'resizing_box'
             }
         },
 
@@ -189,7 +207,8 @@ const asciiMachine = createMachine({
                 TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'moving_box',
                 DELETE: 'normal',
-                DRAW_BOX: 'drawing_box'
+                DRAW_BOX: 'drawing_box',
+                TOGGLE_RESIZEBOX: 'resizing_box'
             }
         },
 
@@ -265,7 +284,8 @@ const asciiMachine = createMachine({
                 TOGGLE_BOXDRAW: 'drawing_box',
                 TOGGLE_LABEL: 'labeling',
         		TOGGLE_LINEDRAW: 'normal',
-                TOGGLE_MOVE: 'moving_box'
+                TOGGLE_MOVE: 'moving_box',
+                TOGGLE_RESIZEBOX: 'resizing_box'
         	}
         },
         labeling: {
@@ -357,7 +377,8 @@ const asciiMachine = createMachine({
                 TOGGLE_LABEL: 'normal',
                 TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'moving_box',
-                DRAW_BOX: 'drawing_box'
+                DRAW_BOX: 'drawing_box',
+                TOGGLE_RESIZEBOX: 'resizing_box'
             }
         },
         moving_box: {
@@ -406,6 +427,7 @@ const asciiMachine = createMachine({
                 TOGGLE_LABEL: 'labeling',
                 TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'normal',
+                TOGGLE_RESIZEBOX: 'resizing_box'
             }
         },
         drawing_box: {
@@ -461,8 +483,53 @@ const asciiMachine = createMachine({
         		TOGGLE_BOXDRAW: 'normal',
                 TOGGLE_LABEL: 'labeling',
                 TOGGLE_LINEDRAW: 'drawing_line',
-                TOGGLE_MOVE: 'moving_box'
+                TOGGLE_MOVE: 'moving_box',
+                TOGGLE_RESIZEBOX: 'resizing_box'
         	}
+        },
+        resizing_box: {
+            entry: function (context) {
+                resizeBoxButton.style.color = 'dodgerblue'
+                context.boxResizing = true
+
+                container.onmousedown = function (ev) {
+                    const [ col, row ] = display.eventToPosition(ev)
+                    const box = findBox(col, row, context.boxes)
+                    if (box && box.maxCol-1 === col && box.maxRow-1 === row)
+                        context.resizingBox = box
+                }
+
+                container.onmousemove = function (ev) {   
+                    if (!context.resizingBox)
+                        return
+
+                    const [ col, row ] = display.eventToPosition(ev)
+
+                    if (col <= context.resizingBox.minCol || row <= context.resizingBox.minRow)
+                        return
+
+                    context.resizingBox.maxCol = col + 1
+                    context.resizingBox.maxRow = row + 1
+                }
+
+                container.onmouseup = function (ev) {
+                    context.resizingBox = undefined
+                }
+
+            },
+            exit: function (context) {
+                container.onmouseup = container.onmousedown = container.onmousemove = undefined
+                resizeBoxButton.style.color = ''
+                context.boxResizing = false
+            },
+            on: {
+                EXPORT: 'exporting',
+                DELETE: 'delete',
+                TOGGLE_BOXDRAW: 'normal',
+                TOGGLE_LABEL: 'labeling',
+                TOGGLE_LINEDRAW: 'drawing_line',
+                TOGGLE_MOVE: 'moving_box'
+            }
         }
     }
 })
@@ -485,7 +552,7 @@ function findLine (col, row, lines) {
 }
 
 
-function drawBox ({ minCol, minRow, maxCol, maxRow, fill, labels }) {
+function drawBox ({ minCol, minRow, maxCol, maxRow, fill, resizing, labels }) {
 	const borderColor = '#333'
 
 	display.draw(minCol, minRow, '┌', borderColor)
@@ -510,6 +577,9 @@ function drawBox ({ minCol, minRow, maxCol, maxRow, fill, labels }) {
 
     for (const label of labels)
         drawLabel(label)
+
+    if (resizing)
+        display.draw(maxCol-1, maxRow-1, '▒', 'dodgerblue')
 }
 
 
@@ -615,7 +685,7 @@ function draw (context) {
     display.clear();
 
 	for (const box of context.boxes)
-		drawBox({ ...box, fill: true })
+		drawBox({ ...box, resizing: context.boxResizing, fill: true })
 
 	if (context.activeBox) {
 		const [ col, row ] = context.activeBox.currentPos
@@ -626,7 +696,7 @@ function draw (context) {
 		const minRow = Math.min(row, context.activeBox.downPos[1])
 		const maxRow = Math.max(row, context.activeBox.downPos[1])
 
-		drawBox({ minCol, minRow, maxCol, maxRow, labels: [ ], fill: true })
+		drawBox({ minCol, minRow, maxCol, maxRow, labels: [ ], resizing: context.boxResizing, fill: true })
 	}
 
     for (const line of context.lines)
