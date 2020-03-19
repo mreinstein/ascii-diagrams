@@ -2564,7 +2564,7 @@ void main() {
                 on: {
                     EXPORT: 'exporting',
                     DELETE: 'delete',
-                    TOGGLE_BOXDRAW: 'normal',
+                    TOGGLE_BOXDRAW: 'drawing_box',
                     TOGGLE_LABEL: 'labeling',
                     TOGGLE_LINEDRAW: 'drawing_line',
                     TOGGLE_MOVE: 'moving_box'
