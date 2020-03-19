@@ -20,9 +20,9 @@
 
       button {
         border: none;
-        background-color: black;
-        color: white;
-        padding: 10px;
+        color: black;
+        padding: 6px;
+        margin: 2px;
         cursor: pointer;
         text-transform: uppercase;
         user-select: none;
@@ -32,20 +32,48 @@
         border: 1px solid #999;
       }
 
+      h4 {
+        font: 800 11px system-ui;
+        margin: 2px;
+        padding-right: 6px;
+        padding: 0;
+        padding-right: 6px;
+        padding-top: 12px;
+        text-decoration: underline;
+        text-transform: uppercase;
+      }
+
+      #controls {
+        position: fixed;
+        top: 0;
+        right: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        background-color: rgba(255,255,255, 0.8);
+      }
+
   </style>
 </head>
 <body>
 
   <textarea placeholder="my text goes here"  style="display: none; position: fixed; bottom: 0px; left: 0; width: 50%; height: 100px;"></textarea>
 
-  <button style="position: fixed; top: 0px; right: 0px;">export</button>
+  <div id="controls">
+    <button>export</button>
 
-  <button style="position: fixed; bottom: 0px; right: 370px;">delete</button>
-  <button style="position: fixed; bottom: 0px; right: 300px;">label</button>
+    <button>delete</button>
 
-  <button style="position: fixed; bottom: 0px; right: 200px;">move box</button>
-  <button style="position: fixed; bottom: 0px; right: 0px;">draw line</button>
-  <button style="position: fixed; bottom: 0px; right: 100px;">draw box</button>
+    <h4>move</h4>
+    <button>box</button>
+
+    <h4>draw</h4>
+    <button>box</button>
+    <button>label</button>
+    <button>line</button>
+    
+
+  </div>
 
   <dialog id="export">
       <textarea style="height: 50vh; font-family: monospace; white-space: pre;" readonly></textarea>

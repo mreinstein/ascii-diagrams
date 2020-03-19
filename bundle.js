@@ -2053,7 +2053,7 @@ void main() {
 
     let display, container;
 
-    const [ exportButton, deleteButton, labelToggle, moveToggle, lineToggle, boxToggle ] = document.querySelectorAll('button');
+    const [ exportButton, deleteButton, moveToggle, boxToggle, labelToggle, lineToggle ] = document.querySelectorAll('button');
 
     lineToggle.onclick = function () {
         asciiService.send('TOGGLE_LINEDRAW');
@@ -2124,7 +2124,7 @@ void main() {
                     dialog.show();
                 },
                 exit: function (context) {
-                    exportButton.style.color = 'white';
+                    exportButton.style.color = '';
                     const dialog = document.querySelector('dialog');
                     dialog.close();
                 },
@@ -2165,7 +2165,7 @@ void main() {
                     };
                 },
                 exit: function (context) {
-                    deleteButton.style.color = 'white';
+                    deleteButton.style.color = '';
                 },
                 on: {
                     EXPORT: 'exporting',
@@ -2240,7 +2240,7 @@ void main() {
 
             	},
             	exit: function (context) {
-                    lineToggle.style.color = 'white';
+                    lineToggle.style.color = '';
             		context.activeLine = undefined;
             		container.onmousemove = undefined;
             	},
@@ -2333,7 +2333,7 @@ void main() {
                     textarea.style.display = 'none';
                     container.onmousedown = undefined;
                     context.labelingBox = undefined;
-                    labelToggle.style.color = 'white';
+                    labelToggle.style.color = '';
                 },
                 on: {
                     EXPORT: 'exporting',
@@ -2382,7 +2382,7 @@ void main() {
                 },
                 exit: function (context) {
                     container.onmouseup = container.onmousedown = container.onmousemove = undefined;
-                    moveToggle.style.color = 'white';
+                    moveToggle.style.color = '';
                 },
                 on: {
                     EXPORT: 'exporting',
@@ -2434,7 +2434,7 @@ void main() {
     				};
             	},
             	exit: function (context) {
-                    boxToggle.style.color = 'white';
+                    boxToggle.style.color = '';
                     container.onmousedown = undefined;
             		container.onmousemove = undefined;
             		container.onmouseup = undefined;
