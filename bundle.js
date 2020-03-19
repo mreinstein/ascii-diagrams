@@ -2059,29 +2059,78 @@ void main() {
     let display, container;
 
     const [ boxToggle, labelToggle, lineToggle, moveToggle, deleteButton, exportButton ] = document.querySelectorAll('button');
+    const hints = document.querySelector('#hints');
 
     lineToggle.onclick = function () {
         asciiService.send('TOGGLE_LINEDRAW');
+    };
+
+    lineToggle.onmouseenter = function () {
+        hints.innerText = 'Draw a line between 2 boxes.';
+    };
+
+    lineToggle.onmouseleave = function () {
+        hints.innerText = '';
     };
 
     moveToggle.onclick = function () {
         asciiService.send('TOGGLE_MOVE');
     };
 
+    moveToggle.onmouseenter = function () {
+        hints.innerText = 'Move a box.';
+    };
+
+    moveToggle.onmouseleave = function () {
+        hints.innerText = '';
+    };
+
     boxToggle.onclick = function () {
         asciiService.send('TOGGLE_BOXDRAW');
+    };
+
+    boxToggle.onmouseenter = function () {
+        hints.innerText = 'Draw a box.';
+    };
+
+    boxToggle.onmouseleave = function () {
+        hints.innerText = '';
     };
 
     labelToggle.onclick = function () {
         asciiService.send('TOGGLE_LABEL');
     };
 
+    labelToggle.onmouseenter = function () {
+        hints.innerText = 'Write text on a box or a line.';
+    };
+
+    labelToggle.onmouseleave = function () {
+        hints.innerText = '';
+    };
+
     deleteButton.onclick = function () {
         asciiService.send('DELETE');
     };
 
+    deleteButton.onmouseenter = function () {
+        hints.innerText = 'Delete a box or a line.';
+    };
+
+    deleteButton.onmouseleave = function () {
+        hints.innerText = '';
+    };
+
     exportButton.onclick = function () {
         asciiService.send('EXPORT');
+    };
+
+    exportButton.onmouseenter = function () {
+        hints.innerText = 'Export a diagram to text, embeddable in markdown or source code.';
+    };
+
+    exportButton.onmouseleave = function () {
+        hints.innerText = '';
     };
 
 
