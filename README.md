@@ -2,7 +2,7 @@
 
 ascii diagramming done right
 
-![alt text](fig3.png "screenshot" | width=800)
+![alt text](fig3.png "screenshot")
 
 
 Despite there being a number of grid rendering modules, I couldn't find satisfying all criteria:
