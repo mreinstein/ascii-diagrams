@@ -66,6 +66,16 @@
         color: #666;
       }
 
+      .github {
+        position: fixed;
+        bottom: 0px;
+        left: 0px;
+        padding: 8px;
+        width: 16px;
+        height: 16px;
+        background: rgba(255,255,255, 0.8);
+      }
+
   </style>
 </head>
 <body>
@@ -81,6 +91,7 @@
 
     <h4>move</h4>
     <button>box</button>
+    <button style="opacity: 0">label</button>
 
     <h4>resize</h4>
     <button>box</button>
@@ -92,6 +103,10 @@
     <div id="hints"> </div>
 
   </div>
+
+  <a href="https://github.com/mreinstein/ascii-diagrams" target="_ascii">
+    <img src="gitHub-Mark-32px.png" alt="github octocat" class="github" width="32" height="32"/>
+  </a>
 
   <dialog id="export">
       <textarea style="height: 50vh; font-family: monospace; white-space: pre;" readonly></textarea>

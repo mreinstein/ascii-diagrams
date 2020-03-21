@@ -1755,6 +1755,7 @@ void main() {
 
     // given a box and a point on the box, determine the
     // point on the edge of the box closest to the provided point
+    // expressed in coordinates relative to the box top,left corner
     //
     // @param Object box { minCol, minRow, maxCol, maxRow }
     function findClosestPointOnBox (col, row, box) {
@@ -1777,16 +1778,18 @@ void main() {
             side = 'top';
         }
 
+        let absPoint;
+
         if (side === 'left')
-            return { col: box.minCol, row, side }
+            absPoint = { col: box.minCol, row };
+        else if (side === 'right')
+            absPoint = { col: box.maxCol, row };
+        else if (side === 'bottom')
+            absPoint = { col, row: box.maxRow };
+        else if (side === 'top')
+            absPoint = { col, row: box.minRow };
 
-        if (side === 'right')
-            return { col: box.maxCol, row, side }
-
-        if (side === 'bottom')
-            return { col, row: box.maxRow, side }
-
-        return { col, row: box.minRow, side }
+        return { col: absPoint.col - box.minCol, row: absPoint.row - box.minRow, side }
     }
 
     var tileMap = {
@@ -2058,7 +2061,7 @@ void main() {
 
     let display, container;
 
-    const [ boxToggle, labelToggle, lineToggle, moveToggle, resizeBoxButton, deleteButton, exportButton ] = document.querySelectorAll('button');
+    const [ boxToggle, labelToggle, lineToggle, moveToggle, moveLabelButton, resizeBoxButton, deleteButton, exportButton ] = document.querySelectorAll('button');
     const hints = document.querySelector('#hints');
 
     lineToggle.onclick = function () {
@@ -2264,24 +2267,8 @@ void main() {
                         const point = findClosestPointOnBox(col, row, box);
 
             			context.activeLine = {
-                            start: {
-                                box,
-                                point: {
-                                    col: point.col - box.minCol,
-                                    row: point.row - box.minRow,
-                                    side: point.side
-                                }
-                            },
-                            end: {
-                                box,
-                                point: {
-                                    // store position of line point relative to the
-                                    //  top left corner of the box it connects with
-                                    col: point.col - box.minCol,
-                                    row: point.row - box.minRow,
-                                    side: point.side
-                                }
-                            },
+                            start: { box, point },
+                            end: { box, point },
                             labels: [ ]
             			};
 
@@ -2289,16 +2276,10 @@ void main() {
                             const [ col, row ] = display.eventToPosition(ev);
                             const box = findBox(col, row, context.boxes);
 
-                            if (box) {
-                                const point = findClosestPointOnBox(col, row, box);
-                                context.activeLine.end.point = {
-                                    col: point.col - box.minCol,
-                                    row: point.row - box.minRow,
-                                    side: point.side
-                                };
-                            } else {
+                            if (box)
+                                context.activeLine.end.point = findClosestPointOnBox(col, row, box);
+                            else
                                context.activeLine.end.point = { col, row };
-                            }
 
                             context.activeLine.end.box = box;
     	        		};

@@ -1,5 +1,6 @@
 // given a box and a point on the box, determine the
 // point on the edge of the box closest to the provided point
+// expressed in coordinates relative to the box top,left corner
 //
 // @param Object box { minCol, minRow, maxCol, maxRow }
 export default function findClosestPointOnBox (col, row, box) {
@@ -22,14 +23,16 @@ export default function findClosestPointOnBox (col, row, box) {
         side = 'top'
     }
 
+    let absPoint
+
     if (side === 'left')
-        return { col: box.minCol, row, side }
+        absPoint = { col: box.minCol, row }
+    else if (side === 'right')
+        absPoint = { col: box.maxCol, row }
+    else if (side === 'bottom')
+        absPoint = { col, row: box.maxRow }
+    else if (side === 'top')
+        absPoint = { col, row: box.minRow }
 
-    if (side === 'right')
-        return { col: box.maxCol, row, side }
-
-    if (side === 'bottom')
-        return { col, row: box.maxRow, side }
-
-    return { col, row: box.minRow, side }
+    return { col: absPoint.col - box.minCol, row: absPoint.row - box.minRow, side }
 }

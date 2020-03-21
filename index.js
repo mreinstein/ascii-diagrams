@@ -19,7 +19,7 @@ const model = {
 
 let display, container
 
-const [ boxToggle, labelToggle, lineToggle, moveToggle, resizeBoxButton, deleteButton, exportButton ] = document.querySelectorAll('button')
+const [ boxToggle, labelToggle, lineToggle, moveToggle, moveLabelButton, resizeBoxButton, deleteButton, exportButton ] = document.querySelectorAll('button')
 const hints = document.querySelector('#hints')
 
 lineToggle.onclick = function () {
@@ -225,24 +225,8 @@ const asciiMachine = createMachine({
                     const point = closestPointOnBox(col, row, box)
 
         			context.activeLine = {
-                        start: {
-                            box,
-                            point: {
-                                col: point.col - box.minCol,
-                                row: point.row - box.minRow,
-                                side: point.side
-                            }
-                        },
-                        end: {
-                            box,
-                            point: {
-                                // store position of line point relative to the
-                                //  top left corner of the box it connects with
-                                col: point.col - box.minCol,
-                                row: point.row - box.minRow,
-                                side: point.side
-                            }
-                        },
+                        start: { box, point },
+                        end: { box, point },
                         labels: [ ]
         			}
 
@@ -250,16 +234,10 @@ const asciiMachine = createMachine({
                         const [ col, row ] = display.eventToPosition(ev)
                         const box = findBox(col, row, context.boxes)
 
-                        if (box) {
-                            const point = closestPointOnBox(col, row, box)
-                            context.activeLine.end.point = {
-                                col: point.col - box.minCol,
-                                row: point.row - box.minRow,
-                                side: point.side
-                            }
-                        } else {
+                        if (box)
+                            context.activeLine.end.point = closestPointOnBox(col, row, box)
+                        else
                            context.activeLine.end.point = { col, row }
-                        }
 
                         context.activeLine.end.box = box
 	        		}

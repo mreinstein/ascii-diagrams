@@ -26,10 +26,11 @@ npm start
 
 ### TODO
 * bug: resizing a box breaks any lines that originate from it
-* implement move label
+
 * keyboard shortcuts
-* add link to github project
+* implement move label
 * make complicated states like line_drawing and labeling nested state machines
+* implement edit label
 * implement move line
 * undo/redo
 * explore control plane concept
