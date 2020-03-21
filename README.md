@@ -25,10 +25,10 @@ npm start
 
 
 ### TODO
-* keyboard shortcuts
-* implement move label
 * make complicated states like line_drawing and labeling nested state machines
+* implement move label
 * implement edit label
 * implement move line
+* on window resize, increase grid columns/rows when it doesn't at least cover the window viewport
 * undo/redo
 * explore control plane concept

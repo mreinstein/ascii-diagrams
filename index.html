@@ -24,8 +24,8 @@
         padding: 0;
         margin: 4px;
         cursor: pointer;
-        text-transform: uppercase;
         user-select: none;
+        text-align: right;
       }
 
       button:hover {
@@ -43,18 +43,18 @@
         padding-top: 14px;
         text-decoration: underline;
         text-transform: uppercase;
+        text-align: right;
       }
 
       #controls {
         position: fixed;
         top: 0;
         right: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
+        display: grid;
+        grid-template-columns: 1fr 20px;
         background-color: rgba(255,255,255, 0.8);
         padding-right: 14px;
-        max-width: 190px;
+        max-width: 210px;
       }
 
       #hints {
@@ -64,6 +64,14 @@
         padding-top: 32px;
         text-align: right;
         color: #666;
+      }
+
+      .shortcut {
+        font: 800 11px system-ui;
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
 
       .github {
@@ -85,20 +93,39 @@
   <div id="controls">
 
     <h4>draw</h4>
+    <div class="shortcut"></div>
+
     <button>box</button>
+    <div class="shortcut" title="keyboard shorcut: b">b</div>
+
     <button>label</button>
+    <div class="shortcut" title="keyboard shorcut: t">t</div>
+
     <button>line</button>
+    <div class="shortcut" title="keyboard shorcut: l">l</div>
 
     <h4>move</h4>
+    <div class="shortcut"></div>
+
     <button>box</button>
+    <div class="shortcut" title="keyboard shorcut: m">m</div>
     <button style="opacity: 0">label</button>
+    <div class="shortcut"></div>
 
     <h4>resize</h4>
+    <div class="shortcut"></div>
+
     <button>box</button>
+    <div class="shortcut" title="keyboard shorcut: r">r</div>
     
     <h4>misc</h4>
+    <div class="shortcut"></div>
+
     <button>delete</button>
+    <div class="shortcut" title="keyboard shorcut: d">d</div>
+
     <button>export</button>
+    <div class="shortcut" title="keyboard shorcut: e">e</div>
 
     <div id="hints"> </div>
 

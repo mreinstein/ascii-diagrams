@@ -2064,6 +2064,18 @@ void main() {
     const [ boxToggle, labelToggle, lineToggle, moveToggle, moveLabelButton, resizeBoxButton, deleteButton, exportButton ] = document.querySelectorAll('button');
     const hints = document.querySelector('#hints');
 
+    document.querySelectorAll('.shortcut').forEach((s) =>{
+     
+        s.onmouseenter = function () {
+            if (s.innerText.length)
+                hints.innerText = 'Keyboard Shortcut Key:  ' + s.innerText;
+        };
+
+        s.onmouseleave = function () {
+            hints.innerText = '';
+        };
+    });
+
     lineToggle.onclick = function () {
         asciiService.send('TOGGLE_LINEDRAW');
     };
@@ -2150,6 +2162,30 @@ void main() {
     };
 
 
+    function keyShortcuts (ev) {
+        if (ev.key === 'b')
+            asciiService.send('TOGGLE_BOXDRAW');
+        
+        if (ev.key === 't')
+            asciiService.send('TOGGLE_LABEL');
+
+        if (ev.key === 'l')
+            asciiService.send('TOGGLE_LINEDRAW');
+
+        if (ev.key === 'm')
+            asciiService.send('TOGGLE_MOVE');
+
+        if (ev.key === 'r')
+            asciiService.send('TOGGLE_RESIZEBOX');
+
+        if (ev.key === 'd')
+            asciiService.send('DELETE');
+
+        if (ev.key === 'e')
+            asciiService.send('EXPORT');   
+    }
+
+
     const asciiMachine = f({
     	initial: 'normal',
 
@@ -2172,6 +2208,9 @@ void main() {
 
         states: {
             normal: {
+                entry: function (context) {
+                    window.addEventListener('keydown', keyShortcuts);
+                },
                 on: {
                     EXPORT: 'exporting',
                     TOGGLE_BOXDRAW: 'drawing_box',
@@ -2336,6 +2375,8 @@ void main() {
                             context.labelingBox = undefined;
                             textarea.value = '';
                             return
+                        } else {
+                            window.removeEventListener('keydown', keyShortcuts);
                         }
 
                         // TODO: unclear why I need to do this on the next event tick...
@@ -2375,6 +2416,7 @@ void main() {
 
                 },
                 exit: function (context) {
+
                     if (context.labelingBox) {
                         if (context.labelingBox.box)
                             context.labelingBox.box.labels.push(context.labelingBox);
@@ -2383,6 +2425,10 @@ void main() {
                     }
 
                     const textarea = document.querySelector('textarea');
+
+                    if (textarea.display !== 'none')
+                        window.addEventListener('keydown', keyShortcuts);
+                    
                     textarea.value = '';
                     textarea.onkeyup = undefined;
                     textarea.style.display = 'none';
@@ -2541,7 +2587,6 @@ void main() {
                             line.start.point = findClosestPointOnBox(globalCol, globalRow, line.start.box);
                         });
 
-
                         // find all lines that terminate at this box
                         context.lines.filter((line) => {
                             return line.end.box === context.resizingBox
@@ -2551,7 +2596,6 @@ void main() {
                             const globalRow = line.end.point.row + line.end.box.minRow;
                             line.end.point = findClosestPointOnBox(globalCol, globalRow, line.end.box);
                         });
-
                     };
 
                     container.onmouseup = function (ev) {
