@@ -488,6 +488,28 @@ const asciiMachine = createMachine({
 
                     context.resizingBox.maxCol = col + 1
                     context.resizingBox.maxRow = row + 1
+
+                    // find all lines that originate on this box
+                    context.lines.filter((line) => {
+                        return line.start.box === context.resizingBox
+                    }).map((line) => {
+                        // update the line start position
+                        const globalCol = line.start.point.col + line.start.box.minCol
+                        const globalRow = line.start.point.row + line.start.box.minRow
+                        line.start.point = closestPointOnBox(globalCol, globalRow, line.start.box)
+                    })
+
+
+                    // find all lines that terminate at this box
+                    context.lines.filter((line) => {
+                        return line.end.box === context.resizingBox
+                    }).map((line) => {
+                        // update the line start position
+                        const globalCol = line.end.point.col + line.end.box.minCol
+                        const globalRow = line.end.point.row + line.end.box.minRow
+                        line.end.point = closestPointOnBox(globalCol, globalRow, line.end.box)
+                    })
+
                 }
 
                 container.onmouseup = function (ev) {
