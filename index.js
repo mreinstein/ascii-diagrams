@@ -25,11 +25,13 @@ const hints = document.querySelector('#hints')
 document.querySelectorAll('.shortcut').forEach((s) =>{
  
     s.onmouseenter = function () {
+        s.style.color = 'deeppink'
         if (s.innerText.length)
             hints.innerText = 'Keyboard Shortcut Key:  ' + s.innerText
     }
 
     s.onmouseleave = function () {
+        s.style.color = ''
         hints.innerText = ''
     }
 })

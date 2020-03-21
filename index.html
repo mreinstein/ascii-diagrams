@@ -36,6 +36,19 @@
         border: none;
       }
 
+      h1 {
+        position: fixed;
+        top: 0;
+        left: 0;
+        font: 400 14px system-ui;
+        padding: 8px;
+        margin: 0;
+        background: rgba(255,255,255, 0.8);
+        pointer-events: none;
+        text-decoration: underline;
+      }
+
+
       h4 {
         font: 800 11px system-ui;
         margin: 2px;
@@ -48,12 +61,12 @@
 
       #controls {
         position: fixed;
-        top: 0;
+        top: 16px;
         right: 0;
         display: grid;
         grid-template-columns: 1fr 20px;
         background-color: rgba(255,255,255, 0.8);
-        padding-right: 14px;
+        padding-right: 10px;
         max-width: 210px;
       }
 
@@ -87,7 +100,7 @@
   </style>
 </head>
 <body>
-
+  <h1>Ascii Box and Line Diagramming</h1>
   <textarea placeholder="Type label text"  style="display: none; position: fixed; bottom: 0px; left: 0; width: 50%; height: 100px;"></textarea>
 
   <div id="controls">
@@ -98,7 +111,7 @@
     <button>box</button>
     <div class="shortcut" title="keyboard shorcut: b">b</div>
 
-    <button>label</button>
+    <button>text</button>
     <div class="shortcut" title="keyboard shorcut: t">t</div>
 
     <button>line</button>
