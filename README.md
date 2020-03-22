@@ -27,6 +27,7 @@ npm start
 ### TODO
 * implement delete text
 * highlight item to delete under mouse cursor (label, line, box)
+* combine `move box` and `move label` into a single command
 * highlight item to move under the mouse cursor (label, box)
 * on window resize, increase grid columns/rows when it doesn't at least cover the window viewport
 * make the active command stand out more
