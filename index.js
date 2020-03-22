@@ -1,21 +1,63 @@
 import { Display }       from 'rot-js'
 import { createMachine,
-         interpret }     from '@xstate/fsm'
+         interpret }     from 'xstate'
 import exportToAscii     from './export.js'
 import closestPointOnBox from './find-point-on-box.js'
 import getPathCells      from './get-path-cells.js'
 import tileMap           from './tile-map.js'
 
 
-const font = {
-    width: 8,
-    height: 10
+const model = {
+    columns: 0,
+    rows: 0,
+    font: {
+        width: 0,
+        height: 0
+    }
 }
 
-const model = {
-    columns: Math.ceil(window.outerWidth / font.width),
-    rows: Math.ceil(window.outerHeight / font.height)
+
+function loadFont ({ width, height }) {
+    model.font.width = width
+    model.font.height = height
+    model.columns = Math.ceil(window.outerWidth / width)
+    model.rows = Math.ceil(window.outerHeight / height)
+
+    const img = new Image();
+
+    img.src = `/font/font_${model.font.width}_${model.font.height}.png`;
+    img.onload = _ => {
+        for (const glyph in tileMap) {
+            const idx = tileMap[glyph];
+
+            // the font files always have 32 columns
+            const sx = (idx % 32) * model.font.width;
+            const sy = (idx / 32 | 0) * model.font.height;
+
+            tileMap[glyph] = [ sx, sy ];
+        }
+
+        display = new Display({
+            bg: 'white',
+            layout: 'tile-gl',
+            tileColorize: true,
+            tileWidth: model.font.width,
+            tileHeight: model.font.height,
+            tileSet: img,
+            tileMap,
+
+            // defaults to 80x25
+            width: model.columns,
+            height: model.rows
+        })
+
+        container = display.getContainer()
+        container.style.imageRendering = 'pixelated'
+        document.body.appendChild(container)
+        animate();
+    }
 }
+
 
 let display, container
 
@@ -71,7 +113,6 @@ resizeBoxButton.onmouseenter = function () {
 resizeBoxButton.onmouseleave = function () {
     hints.innerText = ''
 }
-
 
 boxToggle.onclick = function () {
     asciiService.send('TOGGLE_BOXDRAW')
@@ -163,7 +204,9 @@ const asciiMachine = createMachine({
         lines: [ ],
 	    currentPos: undefined,
 
-        boxResizing: false
+        boxResizing: false,
+
+        ...model
     },
 
     states: {
@@ -189,7 +232,7 @@ const asciiMachine = createMachine({
                 const dialog = document.querySelector('dialog')
 
                 const textarea = dialog.querySelector('textarea')
-                const exportedResult = exportToAscii(context, model)
+                const exportedResult = exportToAscii(context)
                 const columnCount = exportedResult.indexOf('\n')
                 textarea.setAttribute('cols', columnCount)
                 textarea.value = exportedResult
@@ -339,10 +382,8 @@ const asciiMachine = createMachine({
                         window.removeEventListener('keydown', keyShortcuts)
                     }
 
-                    // TODO: unclear why I need to do this on the next event tick...
-                    setTimeout(function () {
-                       textarea.focus()
-                    }, 0)
+                    // need to do this on the next event tick
+                    setTimeout(() => textarea.focus(), 0)
 
                     if (box) {
                         const relativeCol = col - box.minCol
@@ -762,39 +803,7 @@ function animate () {
 }
 
 
-const img = new Image();
-img.src = `/font/font_${font.width}_${font.height}.png`;
-img.onload = _ => {
-
-    for (const glyph in tileMap) {
-        const idx = tileMap[glyph];
-
-        // the font files always have 32 columns
-        const sx = (idx % 32) * font.width;
-        const sy = (idx / 32 | 0) * font.height;
-
-        tileMap[glyph] = [ sx, sy ];
-    }
-
-    display = new Display({
-        bg: 'white',
-        layout: 'tile-gl',
-        tileColorize: true,
-        tileWidth: font.width,
-        tileHeight: font.height,
-        tileSet: img,
-        tileMap,
-
-        // defaults to 80x25
-        width: model.columns,
-        height: model.rows
-    })
-
-    container = display.getContainer()
-    container.style.imageRendering = 'pixelated'
-    document.body.appendChild(container)
-    animate();
-}
+loadFont({ width: 8, height: 10 })
 
 
 /*

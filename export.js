@@ -63,12 +63,12 @@ function replaceAt (input, index, replacement) {
 }
 
 
-export default function exportToAscii (context, model) {
+export default function exportToAscii (context) {
     let result = ''
 
     const toIndex = function (col, row) {
         const newlineCount = row
-        return (row * model.columns) + col + newlineCount
+        return (row * context.columns) + col + newlineCount
     }
 
     const write = function (col, row, char) {
@@ -100,9 +100,9 @@ export default function exportToAscii (context, model) {
     // find the bounding box that includes all non-whitespace cells
     const boundingBox = getBoundingBox(context)
 
-    for (let row=0; row < model.rows; row++) {
-        for (let col=0; col < model.columns; col++) {
-            const idx = row * model.columns + col
+    for (let row=0; row < context.rows; row++) {
+        for (let col=0; col < context.columns; col++) {
+            const idx = row * context.columns + col
             result += ' '
         }
         result += '\n'
