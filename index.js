@@ -102,6 +102,18 @@ moveToggle.onmouseleave = function () {
     hints.innerText = ''
 }
 
+moveLabelButton.onclick = function () {
+    asciiService.send('TOGGLE_MOVETEXT')
+}
+
+moveLabelButton.onmouseenter = function () {
+    hints.innerText = 'Move existing text.'
+}
+
+moveLabelButton.onmouseleave = function () {
+    hints.innerText = ''
+}
+
 resizeBoxButton.onclick = function () {
     asciiService.send('TOGGLE_RESIZEBOX')
 }
@@ -176,6 +188,9 @@ function keyShortcuts (ev) {
     if (ev.key === 'm')
         asciiService.send('TOGGLE_MOVE')
 
+    if (ev.key === 'n')
+        asciiService.send('TOGGLE_MOVETEXT')
+
     if (ev.key === 'r')
         asciiService.send('TOGGLE_RESIZEBOX')
 
@@ -196,6 +211,8 @@ const asciiMachine = createMachine({
         activeLine: undefined,
 
         movingBox: undefined,
+        movingText: undefined,
+
         resizingBox: undefined,
 
         labelingBox: undefined,
@@ -220,6 +237,7 @@ const asciiMachine = createMachine({
                 TOGGLE_LABEL: 'labeling',
             	TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'moving_box',
+                TOGGLE_MOVETEXT: 'moving_label',
                 DELETE: 'delete',
             	DRAW_BOX: 'drawing_box',
                 TOGGLE_RESIZEBOX: 'resizing_box'
@@ -250,6 +268,7 @@ const asciiMachine = createMachine({
                 TOGGLE_LABEL: 'labeling',
                 TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'moving_box',
+                TOGGLE_MOVETEXT: 'moving_label',
                 DELETE: 'delete',
                 DRAW_BOX: 'drawing_box',
                 TOGGLE_RESIZEBOX: 'resizing_box'
@@ -283,6 +302,7 @@ const asciiMachine = createMachine({
             },
             exit: function (context) {
                 deleteButton.style.color = ''
+                container.onmousedown = undefined
             },
             on: {
                 EXPORT: 'exporting',
@@ -290,6 +310,7 @@ const asciiMachine = createMachine({
                 TOGGLE_LABEL: 'labeling',
                 TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'moving_box',
+                TOGGLE_MOVETEXT: 'moving_label',
                 DELETE: 'normal',
                 DRAW_BOX: 'drawing_box',
                 TOGGLE_RESIZEBOX: 'resizing_box'
@@ -347,9 +368,68 @@ const asciiMachine = createMachine({
                 TOGGLE_LABEL: 'labeling',
         		TOGGLE_LINEDRAW: 'normal',
                 TOGGLE_MOVE: 'moving_box',
+                TOGGLE_MOVETEXT: 'moving_label',
                 TOGGLE_RESIZEBOX: 'resizing_box'
         	}
         },
+
+        moving_label: {
+            entry: function (context) {
+                moveLabelButton.style.color = 'dodgerblue'
+
+                container.onmousedown = function (ev) {
+                    const [ col, row ] = display.eventToPosition(ev)
+                    context.movingText = findText(col, row, context.lines, context.boxes)
+                }
+
+                container.onmousemove = function (ev) {
+                    if (!context.movingText)
+                        return
+
+                    const [ col, row ] = display.eventToPosition(ev)
+
+                    const label = context.movingText
+
+                    if (label.line) {          
+                        const minCol = label.line.start.box.minCol + label.line.start.point.col //+ label.point[0]
+                        const minRow = label.line.start.box.minRow + label.line.start.point.row //+ label.point[1]
+
+                        // the label is on a line
+                        context.movingText.point[0] = col - minCol
+                        context.movingText.point[1] = row - minRow
+                        
+                    } else {
+                        // the label is on a box
+                        context.movingText.point[0] = col - context.movingText.box.minCol
+                        context.movingText.point[1] = row - context.movingText.box.minRow
+                    }
+                }
+
+                container.onmouseup = function (ev) {
+                    const [ col, row ] = display.eventToPosition(ev)
+                    context.movingText = undefined
+                }
+
+            },
+            exit: function (context) {
+                moveLabelButton.style.color = ''
+                context.movingText = undefined
+                container.onmousedown = undefined
+                container.onmousemove = undefined
+                container.onmouseup = undefined
+            },
+            on: {
+                EXPORT: 'exporting',
+                DELETE: 'delete',
+                TOGGLE_BOXDRAW: 'drawing_box',
+                TOGGLE_LABEL: 'labeling',
+                TOGGLE_LINEDRAW: 'drawing_line',
+                TOGGLE_MOVE: 'moving_box',
+                TOGGLE_MOVETEXT: 'normal',
+                TOGGLE_RESIZEBOX: 'resizing_box'
+            }
+        },
+
         labeling: {
             entry: function (context) {
                 labelToggle.style.color = 'dodgerblue'
@@ -444,6 +524,7 @@ const asciiMachine = createMachine({
                 TOGGLE_LABEL: 'normal',
                 TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'moving_box',
+                TOGGLE_MOVETEXT: 'moving_label',
                 DRAW_BOX: 'drawing_box',
                 TOGGLE_RESIZEBOX: 'resizing_box'
             }
@@ -494,6 +575,7 @@ const asciiMachine = createMachine({
                 TOGGLE_LABEL: 'labeling',
                 TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'normal',
+                TOGGLE_MOVETEXT: 'moving_label',
                 TOGGLE_RESIZEBOX: 'resizing_box'
             }
         },
@@ -551,6 +633,7 @@ const asciiMachine = createMachine({
                 TOGGLE_LABEL: 'labeling',
                 TOGGLE_LINEDRAW: 'drawing_line',
                 TOGGLE_MOVE: 'moving_box',
+                TOGGLE_MOVETEXT: 'moving_label',
                 TOGGLE_RESIZEBOX: 'resizing_box'
         	}
         },
@@ -615,7 +698,8 @@ const asciiMachine = createMachine({
                 TOGGLE_BOXDRAW: 'drawing_box',
                 TOGGLE_LABEL: 'labeling',
                 TOGGLE_LINEDRAW: 'drawing_line',
-                TOGGLE_MOVE: 'moving_box'
+                TOGGLE_MOVE: 'moving_box',
+                TOGGLE_MOVETEXT: 'moving_label',
             }
         }
     }
@@ -635,6 +719,60 @@ function findLine (col, row, lines) {
         for (const cell of cells)
             if (cell.row === row && cell.col === col)
                 return line
+    }
+}
+
+
+function getBoxLabelBounds (label) {
+    const minCol = label.box.minCol + label.point[0]
+    const minRow = label.box.minRow + label.point[1]
+
+    const lines = label.text.split('\n')
+    const maxRow = minRow + lines.length - 1
+    let maxLength = 0
+    for (const line of lines)
+        maxLength = Math.max(maxLength, line.length)
+    const maxCol = minCol + maxLength - 1
+   
+    return { minCol, minRow, maxCol, maxRow }
+}
+
+
+
+function getLineLabelBounds (label) {
+    const minCol = label.line.start.box.minCol + label.line.start.point.col + label.point[0]
+    const minRow = label.line.start.box.minRow + label.line.start.point.row + label.point[1]
+
+    const lines = label.text.split('\n')
+    const maxRow = minRow + lines.length - 1
+    let maxLength = 0
+    for (const line of lines)
+        maxLength = Math.max(maxLength, line.length)
+    const maxCol = minCol + maxLength - 1
+   
+    return { minCol, minRow, maxCol, maxRow }
+}
+
+
+function findText (col, row, lines, boxes) {
+    for (const box of boxes) {
+        const label = box.labels.find((label) => {
+            const bounds = getBoxLabelBounds(label)
+            return col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow
+        })
+
+        if (label)
+            return label
+    }
+
+    for (const line of lines) {
+        const label = line.labels.find((label) => {
+            const bounds = getLineLabelBounds(label)
+            return col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow
+        })
+
+        if (label)
+            return label
     }
 }
 

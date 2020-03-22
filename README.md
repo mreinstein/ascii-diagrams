@@ -25,7 +25,7 @@ npm start
 
 
 ### TODO
-* implement move label
+* implement delete text
 * implement edit label
 * implement move line
 * on window resize, increase grid columns/rows when it doesn't at least cover the window viewport
