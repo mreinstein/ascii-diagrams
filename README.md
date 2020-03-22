@@ -29,6 +29,8 @@ npm start
 * highlight item to delete under mouse cursor (label, line, box)
 * highlight item to move under the mouse cursor (label, box)
 * on window resize, increase grid columns/rows when it doesn't at least cover the window viewport
+* make the active command stand out more
+* bug: when hints show, the outline of the active command grows and looks odd
 * implement edit label
 * implement move line
 * undo/redo
