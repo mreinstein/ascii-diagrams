@@ -25,10 +25,12 @@ npm start
 
 
 ### TODO
-* highlight item to delete under mouse cursor (label, line, box)
 * highlight item to move under the mouse cursor (label, box)
+* highlight item to delete under mouse cursor (label, line, box)
 * make the active command stand out more
 * bug: when hints show, the outline of the active command grows and looks odd
+* clicking outside the export window should close it
+* show backdrop behind export modal
 * implement delete text
 * combine `move box` and `move label` into a single command
 * on window resize, increase grid columns/rows when it doesn't at least cover the window viewport
