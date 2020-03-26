@@ -18,6 +18,10 @@ const model = {
 
 
 function loadFont ({ width, height }) {
+    console.log('loading font')
+    const loadStart = performance.now()
+
+
     model.font.width = width
     model.font.height = height
     model.columns = Math.ceil(window.outerWidth / width)
@@ -52,9 +56,9 @@ function loadFont ({ width, height }) {
         })
 
         container = display.getContainer()
-        container.style.imageRendering = 'pixelated'
         document.body.appendChild(container)
-        animate();
+        console.log('load finished. elapsed:', performance.now() - loadStart)
+        animate()
     }
 }
 

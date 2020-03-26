@@ -25,13 +25,15 @@ npm start
 
 
 ### TODO
-* implement delete text
+* bug: export is broken
+* textarea is hard to see when present
 * highlight item to delete under mouse cursor (label, line, box)
-* combine `move box` and `move label` into a single command
 * highlight item to move under the mouse cursor (label, box)
-* on window resize, increase grid columns/rows when it doesn't at least cover the window viewport
 * make the active command stand out more
 * bug: when hints show, the outline of the active command grows and looks odd
+* implement delete text
+* combine `move box` and `move label` into a single command
+* on window resize, increase grid columns/rows when it doesn't at least cover the window viewport
 * implement edit label
 * implement move line
 * undo/redo
