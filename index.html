@@ -12,6 +12,11 @@
   <meta name="mobile-web-app-capable" content="yes">
 
   <style>
+      * {
+        font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+        font-weight: 300;
+      }
+
       body {
         background-color: white;
         padding: 0;
@@ -39,21 +44,37 @@
         image-rendering: pixelated;
       }
 
+      textarea.raw {
+        position: fixed;
+        left: 8px;
+        width: 50%;
+        height: 100px;
+        padding: 10px;
+        bottom: 36px;
+        display: none;
+        background: #222;
+        color: white;
+        font-size: 12px;
+      }
+
       h1 {
         position: fixed;
         top: 0;
         left: 0;
-        font: 400 14px system-ui;
         padding: 8px;
         margin: 0;
         background: rgba(255,255,255, 0.8);
         pointer-events: none;
+        font-size: 12px;
+        font-weight: 600;
         text-decoration: underline;
+        text-transform: uppercase;
       }
 
 
       h4 {
-        font: 800 11px system-ui;
+        font-size: 11px;
+        font-weight: 800;
         margin: 2px;
         padding: 0;
         padding-top: 20px;
@@ -74,7 +95,7 @@
       }
 
       #hints {
-        font: 400 11px system-ui;
+        font-size: 11px;
         padding: 0;
         margin: 2px;
         padding-top: 32px;
@@ -83,7 +104,8 @@
       }
 
       .shortcut {
-        font: 800 11px system-ui;
+        font-size: 11px;
+        font-weight: 800;
         text-align: center;
         display: flex;
         justify-content: center;
@@ -104,7 +126,7 @@
 </head>
 <body>
   <h1>Ascii Box and Line Diagramming</h1>
-  <textarea placeholder="Type label text"  style="display: none; position: fixed; bottom: 0px; left: 0; width: 50%; height: 100px;"></textarea>
+  <textarea class="raw" placeholder="Enter text input"></textarea>
 
   <div id="controls">
 

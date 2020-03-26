@@ -21,11 +21,516 @@ function loadFont ({ width, height }) {
     console.log('loading font')
     const loadStart = performance.now()
 
-
     model.font.width = width
     model.font.height = height
     model.columns = Math.ceil(window.outerWidth / width)
     model.rows = Math.ceil(window.outerHeight / height)
+
+    asciiMachine = createMachine({
+        initial: 'normal',
+
+        // object containing all shared state for this machine
+        context: {
+            activeBox: undefined,
+            activeLine: undefined,
+
+            movingBox: undefined,
+            movingText: undefined,
+
+            resizingBox: undefined,
+
+            labelingBox: undefined,
+
+            boxes: [ ],
+            lines: [ ],
+            currentPos: undefined,
+
+            boxResizing: false,
+
+            ...model
+        },
+
+        states: {
+            normal: {
+                entry: function (context) {
+                    window.addEventListener('keydown', keyShortcuts)
+                },
+                on: {
+                    EXPORT: 'exporting',
+                    TOGGLE_BOXDRAW: 'drawing_box',
+                    TOGGLE_LABEL: 'labeling',
+                    TOGGLE_LINEDRAW: 'drawing_line',
+                    TOGGLE_MOVE: 'moving_box',
+                    TOGGLE_MOVETEXT: 'moving_label',
+                    DELETE: 'delete',
+                    DRAW_BOX: 'drawing_box',
+                    TOGGLE_RESIZEBOX: 'resizing_box'
+                }
+            },
+
+            exporting: {
+                entry: function (context) {
+                    exportButton.style.color = 'dodgerblue'
+                    const dialog = document.querySelector('dialog')
+
+                    const textarea = dialog.querySelector('textarea')
+                    const exportedResult = exportToAscii(context)
+                    const columnCount = exportedResult.indexOf('\n')
+                    textarea.setAttribute('cols', columnCount)
+                    textarea.value = exportedResult
+
+                    dialog.show()
+                },
+                exit: function (context) {
+                    exportButton.style.color = ''
+                    const dialog = document.querySelector('dialog')
+                    dialog.close()
+                },
+                on: {
+                    EXPORT: 'normal',
+                    TOGGLE_BOXDRAW: 'drawing_box',
+                    TOGGLE_LABEL: 'labeling',
+                    TOGGLE_LINEDRAW: 'drawing_line',
+                    TOGGLE_MOVE: 'moving_box',
+                    TOGGLE_MOVETEXT: 'moving_label',
+                    DELETE: 'delete',
+                    DRAW_BOX: 'drawing_box',
+                    TOGGLE_RESIZEBOX: 'resizing_box'
+                }
+            },
+
+            delete: {
+                entry: function (context) {
+                    deleteButton.style.color = 'dodgerblue'
+
+                    container.onmousedown = function (ev) {
+                        const [ col, row ] = display.eventToPosition(ev)
+                        const line = findLine(col, row, context.lines)
+                        if (line) {
+                            const idx = context.lines.indexOf(line)
+                            context.lines.splice(idx, 1)
+                            return
+                        }
+
+                        const box = findBox(col, row, context.boxes)
+                        if (box) {
+                           const idx = context.boxes.indexOf(box)
+                            context.boxes.splice(idx, 1)
+                            for (let i=context.lines.length-1; i >= 0; i--) {
+                                const line = context.lines[i]
+                                if (line.start.box === box || line.end.box === box)
+                                    context.lines.splice(i, 1)
+                            }
+                        }
+                    }
+                },
+                exit: function (context) {
+                    deleteButton.style.color = ''
+                    container.onmousedown = undefined
+                },
+                on: {
+                    EXPORT: 'exporting',
+                    TOGGLE_BOXDRAW: 'drawing_box',
+                    TOGGLE_LABEL: 'labeling',
+                    TOGGLE_LINEDRAW: 'drawing_line',
+                    TOGGLE_MOVE: 'moving_box',
+                    TOGGLE_MOVETEXT: 'moving_label',
+                    DELETE: 'normal',
+                    DRAW_BOX: 'drawing_box',
+                    TOGGLE_RESIZEBOX: 'resizing_box'
+                }
+            },
+
+            drawing_line: {
+                entry: function (context) {
+                    lineToggle.style.color = 'dodgerblue'
+
+                    container.onmousedown = function (ev) {
+                        const [ col, row ] = display.eventToPosition(ev)
+                        const box = findBox(col, row, context.boxes)
+                        if (!box)
+                            return
+
+                        const point = closestPointOnBox(col, row, box)
+
+                        context.activeLine = {
+                            start: { box, point },
+                            end: { box, point },
+                            labels: [ ]
+                        }
+
+                        container.onmousemove = function (ev) {
+                            const [ col, row ] = display.eventToPosition(ev)
+                            const box = findBox(col, row, context.boxes)
+
+                            if (box)
+                                context.activeLine.end.point = closestPointOnBox(col, row, box)
+                            else
+                               context.activeLine.end.point = { col, row }
+
+                            context.activeLine.end.box = box
+                        }
+                    }
+
+                    container.onmouseup = function (ev) {
+                        if (context.activeLine)
+                             context.lines.push({ ...context.activeLine })
+                        context.activeLine = undefined
+                        container.onmousemove = undefined
+                    }
+
+                },
+                exit: function (context) {
+                    lineToggle.style.color = ''
+                    context.activeLine = undefined
+                    container.onmousemove = undefined
+                },
+                on: {
+                    EXPORT: 'exporting',
+                    DELETE: 'delete',
+                    TOGGLE_BOXDRAW: 'drawing_box',
+                    TOGGLE_LABEL: 'labeling',
+                    TOGGLE_LINEDRAW: 'normal',
+                    TOGGLE_MOVE: 'moving_box',
+                    TOGGLE_MOVETEXT: 'moving_label',
+                    TOGGLE_RESIZEBOX: 'resizing_box'
+                }
+            },
+
+            moving_label: {
+                entry: function (context) {
+                    moveLabelButton.style.color = 'dodgerblue'
+
+                    container.onmousedown = function (ev) {
+                        const [ col, row ] = display.eventToPosition(ev)
+                        context.movingText = findText(col, row, context.lines, context.boxes)
+                    }
+
+                    container.onmousemove = function (ev) {
+                        if (!context.movingText)
+                            return
+
+                        const [ col, row ] = display.eventToPosition(ev)
+
+                        const label = context.movingText
+
+                        if (label.line) {          
+                            const minCol = label.line.start.box.minCol + label.line.start.point.col //+ label.point[0]
+                            const minRow = label.line.start.box.minRow + label.line.start.point.row //+ label.point[1]
+
+                            // the label is on a line
+                            context.movingText.point[0] = col - minCol
+                            context.movingText.point[1] = row - minRow
+                            
+                        } else {
+                            // the label is on a box
+                            context.movingText.point[0] = col - context.movingText.box.minCol
+                            context.movingText.point[1] = row - context.movingText.box.minRow
+                        }
+                    }
+
+                    container.onmouseup = function (ev) {
+                        const [ col, row ] = display.eventToPosition(ev)
+                        context.movingText = undefined
+                    }
+
+                },
+                exit: function (context) {
+                    moveLabelButton.style.color = ''
+                    context.movingText = undefined
+                    container.onmousedown = undefined
+                    container.onmousemove = undefined
+                    container.onmouseup = undefined
+                },
+                on: {
+                    EXPORT: 'exporting',
+                    DELETE: 'delete',
+                    TOGGLE_BOXDRAW: 'drawing_box',
+                    TOGGLE_LABEL: 'labeling',
+                    TOGGLE_LINEDRAW: 'drawing_line',
+                    TOGGLE_MOVE: 'moving_box',
+                    TOGGLE_MOVETEXT: 'normal',
+                    TOGGLE_RESIZEBOX: 'resizing_box'
+                }
+            },
+
+            labeling: {
+                entry: function (context) {
+                    labelToggle.style.color = 'dodgerblue'
+
+                    const textarea = document.querySelector('textarea')
+
+                    container.onmousedown = function (ev) {
+                        if (context.labelingBox) {
+                            asciiService.send('TOGGLE_LABEL')
+                            return
+                        }
+
+                        const [ col, row ] = display.eventToPosition(ev)
+                        const box = findBox(col, row, context.boxes)
+
+                        const line = box ? undefined : findLine(col, row, context.lines)
+
+                        textarea.style.display = (box || line) ? 'block' : 'none'
+                        if (textarea.style.display === 'none') {
+                            if (context.labelingBox) {
+                                if (context.labelingBox.box)
+                                    context.labelingBox.box.labels.push(context.labelingBox)
+                                else
+                                    context.labelingBox.line.labels.push(context.labelingBox)
+                            }
+                            context.labelingBox = undefined
+                            textarea.value = ''
+                            return
+                        } else {
+                            window.removeEventListener('keydown', keyShortcuts)
+                        }
+
+                        // need to do this on the next event tick
+                        setTimeout(() => textarea.focus(), 0)
+
+                        if (box) {
+                            const relativeCol = col - box.minCol
+                            const relativeRow = row - box.minRow
+
+                            context.labelingBox = {
+                                box,
+                                point: [ relativeCol, relativeRow ],
+                                text: ''
+                            }
+                        } else {
+                            const lineStartCol = line.start.box.minCol + line.start.point.col
+                            const lineStartRow = line.start.box.minRow + line.start.point.row
+
+                            const relativeCol = col - lineStartCol
+                            const relativeRow = row - lineStartRow
+
+                            context.labelingBox = {
+                                line,
+                                point: [ relativeCol, relativeRow ],
+                                text: ''
+                            }
+                        }
+                    }
+
+                    textarea.onkeyup = function () {
+                        if (!context.labelingBox)
+                            return
+                        context.labelingBox.text = textarea.value
+                    }
+
+                },
+                exit: function (context) {
+
+                    if (context.labelingBox) {
+                        if (context.labelingBox.box)
+                            context.labelingBox.box.labels.push(context.labelingBox)
+                        else
+                            context.labelingBox.line.labels.push(context.labelingBox)
+                    }
+
+                    const textarea = document.querySelector('textarea')
+
+                    if (textarea.style.display === 'block')
+                        window.addEventListener('keydown', keyShortcuts)
+                    
+                    textarea.value = ''
+                    textarea.onkeyup = undefined
+                    textarea.style.display = 'none'
+                    container.onmousedown = undefined
+                    context.labelingBox = undefined
+                    labelToggle.style.color = ''
+                },
+                on: {
+                    EXPORT: 'exporting',
+                    DELETE: 'delete',
+                    TOGGLE_BOXDRAW: 'drawing_box',
+                    TOGGLE_LABEL: 'normal',
+                    TOGGLE_LINEDRAW: 'drawing_line',
+                    TOGGLE_MOVE: 'moving_box',
+                    TOGGLE_MOVETEXT: 'moving_label',
+                    DRAW_BOX: 'drawing_box',
+                    TOGGLE_RESIZEBOX: 'resizing_box'
+                }
+            },
+            moving_box: {
+                entry: function (context) {
+                    moveToggle.style.color = 'dodgerblue'
+
+                    container.onmousedown = function (ev) {
+                        const [ col, row ] = display.eventToPosition(ev)
+                        const box = findBox(col, row, context.boxes)
+                        if (box)
+                            context.movingBox = {
+                                box,
+                                point: [ box.minCol - col, box.minRow - row ]
+                            }
+                    }
+
+                    container.onmousemove = function (ev) {
+                        if (!context.movingBox)
+                            return
+
+                        const [ col, row ] = display.eventToPosition(ev)
+
+                        const dx = col - context.movingBox.box.minCol + context.movingBox.point[0]
+                        const dy = row - context.movingBox.box.minRow + context.movingBox.point[1]
+
+                        context.movingBox.box.minCol += dx
+                        context.movingBox.box.minRow += dy
+
+                        context.movingBox.box.maxCol += dx
+                        context.movingBox.box.maxRow += dy
+                    }
+
+                    container.onmouseup = function (ev) {
+                        context.movingBox = undefined
+                    }
+
+                },
+                exit: function (context) {
+                    container.onmouseup = container.onmousedown = container.onmousemove = undefined
+                    moveToggle.style.color = ''
+                },
+                on: {
+                    EXPORT: 'exporting',
+                    DELETE: 'delete',
+                    TOGGLE_BOXDRAW: 'drawing_box',
+                    TOGGLE_LABEL: 'labeling',
+                    TOGGLE_LINEDRAW: 'drawing_line',
+                    TOGGLE_MOVE: 'normal',
+                    TOGGLE_MOVETEXT: 'moving_label',
+                    TOGGLE_RESIZEBOX: 'resizing_box'
+                }
+            },
+            drawing_box: {
+                entry: function (context) {
+                    boxToggle.style.color = 'dodgerblue'
+
+                    container.onmousedown = function (ev) {
+                        context.activeBox = {
+                            currentPos: display.eventToPosition(ev),
+                            downPos: display.eventToPosition(ev)
+                        }
+
+                        asciiService.send('DRAW_BOX')
+                    }
+
+                    container.onmousemove = function (ev) {
+                        if (!context.activeBox)
+                            return
+
+                        context.activeBox.currentPos = display.eventToPosition(ev)
+                    }
+
+                    container.onmouseup = function (ev) {
+                        if (!context.activeBox)
+                            return
+
+                        const currentPos = display.eventToPosition(ev)
+
+                        const [ col, row ] = currentPos
+
+                        const minCol = Math.min(col, context.activeBox.downPos[0])
+                        const maxCol = Math.max(col, context.activeBox.downPos[0])
+
+                        const minRow = Math.min(row, context.activeBox.downPos[1])
+                        const maxRow = Math.max(row, context.activeBox.downPos[1])
+
+                        if (maxCol - minCol >=1 && maxRow - minRow >= 1)
+                            context.boxes.push({  minCol, minRow, maxCol, maxRow, labels: [ ] })
+
+                        context.activeBox = undefined
+                    }
+                },
+                exit: function (context) {
+                    boxToggle.style.color = ''
+                    container.onmousedown = undefined
+                    container.onmousemove = undefined
+                    container.onmouseup = undefined
+                    context.activeBox = undefined
+                },
+                on: {
+                    EXPORT: 'exporting',
+                    DELETE: 'delete',
+                    TOGGLE_BOXDRAW: 'normal',
+                    TOGGLE_LABEL: 'labeling',
+                    TOGGLE_LINEDRAW: 'drawing_line',
+                    TOGGLE_MOVE: 'moving_box',
+                    TOGGLE_MOVETEXT: 'moving_label',
+                    TOGGLE_RESIZEBOX: 'resizing_box'
+                }
+            },
+            resizing_box: {
+                entry: function (context) {
+                    resizeBoxButton.style.color = 'dodgerblue'
+                    context.boxResizing = true
+
+                    container.onmousedown = function (ev) {
+                        const [ col, row ] = display.eventToPosition(ev)
+                        const box = findBox(col, row, context.boxes)
+                        if (box && box.maxCol-1 === col && box.maxRow-1 === row)
+                            context.resizingBox = box
+                    }
+
+                    container.onmousemove = function (ev) {   
+                        if (!context.resizingBox)
+                            return
+
+                        const [ col, row ] = display.eventToPosition(ev)
+
+                        if (col <= context.resizingBox.minCol || row <= context.resizingBox.minRow)
+                            return
+
+                        context.resizingBox.maxCol = col + 1
+                        context.resizingBox.maxRow = row + 1
+
+                        // find all lines that originate on this box
+                        context.lines.filter((line) => {
+                            return line.start.box === context.resizingBox
+                        }).map((line) => {
+                            // update the line start position
+                            const globalCol = line.start.point.col + line.start.box.minCol
+                            const globalRow = line.start.point.row + line.start.box.minRow
+                            line.start.point = closestPointOnBox(globalCol, globalRow, line.start.box)
+                        })
+
+                        // find all lines that terminate at this box
+                        context.lines.filter((line) => {
+                            return line.end.box === context.resizingBox
+                        }).map((line) => {
+                            // update the line start position
+                            const globalCol = line.end.point.col + line.end.box.minCol
+                            const globalRow = line.end.point.row + line.end.box.minRow
+                            line.end.point = closestPointOnBox(globalCol, globalRow, line.end.box)
+                        })
+                    }
+
+                    container.onmouseup = function (ev) {
+                        context.resizingBox = undefined
+                    }
+
+                },
+                exit: function (context) {
+                    container.onmouseup = container.onmousedown = container.onmousemove = undefined
+                    resizeBoxButton.style.color = ''
+                    context.boxResizing = false
+                },
+                on: {
+                    EXPORT: 'exporting',
+                    DELETE: 'delete',
+                    TOGGLE_BOXDRAW: 'drawing_box',
+                    TOGGLE_LABEL: 'labeling',
+                    TOGGLE_LINEDRAW: 'drawing_line',
+                    TOGGLE_MOVE: 'moving_box',
+                    TOGGLE_MOVETEXT: 'moving_label',
+                }
+            }
+        }
+    })
+
+    asciiService = interpret(asciiMachine).start()
+
 
     const img = new Image();
 
@@ -63,7 +568,7 @@ function loadFont ({ width, height }) {
 }
 
 
-let display, container
+let display, container, asciiMachine, asciiService
 
 const [ boxToggle, labelToggle, lineToggle, moveToggle, moveLabelButton, resizeBoxButton, deleteButton, exportButton ] = document.querySelectorAll('button')
 const hints = document.querySelector('#hints')
@@ -204,512 +709,6 @@ function keyShortcuts (ev) {
     if (ev.key === 'e')
         asciiService.send('EXPORT')   
 }
-
-
-const asciiMachine = createMachine({
-	initial: 'normal',
-
-    // object containing all shared state for this machine
-    context: {
-        activeBox: undefined,
-        activeLine: undefined,
-
-        movingBox: undefined,
-        movingText: undefined,
-
-        resizingBox: undefined,
-
-        labelingBox: undefined,
-
-        boxes: [ ],
-        lines: [ ],
-	    currentPos: undefined,
-
-        boxResizing: false,
-
-        ...model
-    },
-
-    states: {
-        normal: {
-            entry: function (context) {
-                window.addEventListener('keydown', keyShortcuts)
-            },
-            on: {
-                EXPORT: 'exporting',
-                TOGGLE_BOXDRAW: 'drawing_box',
-                TOGGLE_LABEL: 'labeling',
-            	TOGGLE_LINEDRAW: 'drawing_line',
-                TOGGLE_MOVE: 'moving_box',
-                TOGGLE_MOVETEXT: 'moving_label',
-                DELETE: 'delete',
-            	DRAW_BOX: 'drawing_box',
-                TOGGLE_RESIZEBOX: 'resizing_box'
-            }
-        },
-
-        exporting: {
-            entry: function (context) {
-                exportButton.style.color = 'dodgerblue'
-                const dialog = document.querySelector('dialog')
-
-                const textarea = dialog.querySelector('textarea')
-                const exportedResult = exportToAscii(context)
-                const columnCount = exportedResult.indexOf('\n')
-                textarea.setAttribute('cols', columnCount)
-                textarea.value = exportedResult
-
-                dialog.show()
-            },
-            exit: function (context) {
-                exportButton.style.color = ''
-                const dialog = document.querySelector('dialog')
-                dialog.close()
-            },
-            on: {
-                EXPORT: 'normal',
-                TOGGLE_BOXDRAW: 'drawing_box',
-                TOGGLE_LABEL: 'labeling',
-                TOGGLE_LINEDRAW: 'drawing_line',
-                TOGGLE_MOVE: 'moving_box',
-                TOGGLE_MOVETEXT: 'moving_label',
-                DELETE: 'delete',
-                DRAW_BOX: 'drawing_box',
-                TOGGLE_RESIZEBOX: 'resizing_box'
-            }
-        },
-
-        delete: {
-            entry: function (context) {
-                deleteButton.style.color = 'dodgerblue'
-
-                container.onmousedown = function (ev) {
-                    const [ col, row ] = display.eventToPosition(ev)
-                    const line = findLine(col, row, context.lines)
-                    if (line) {
-                        const idx = context.lines.indexOf(line)
-                        context.lines.splice(idx, 1)
-                        return
-                    }
-
-                    const box = findBox(col, row, context.boxes)
-                    if (box) {
-                       const idx = context.boxes.indexOf(box)
-                        context.boxes.splice(idx, 1)
-                        for (let i=context.lines.length-1; i >= 0; i--) {
-                            const line = context.lines[i]
-                            if (line.start.box === box || line.end.box === box)
-                                context.lines.splice(i, 1)
-                        }
-                    }
-                }
-            },
-            exit: function (context) {
-                deleteButton.style.color = ''
-                container.onmousedown = undefined
-            },
-            on: {
-                EXPORT: 'exporting',
-                TOGGLE_BOXDRAW: 'drawing_box',
-                TOGGLE_LABEL: 'labeling',
-                TOGGLE_LINEDRAW: 'drawing_line',
-                TOGGLE_MOVE: 'moving_box',
-                TOGGLE_MOVETEXT: 'moving_label',
-                DELETE: 'normal',
-                DRAW_BOX: 'drawing_box',
-                TOGGLE_RESIZEBOX: 'resizing_box'
-            }
-        },
-
-        drawing_line: {
-        	entry: function (context) {
-                lineToggle.style.color = 'dodgerblue'
-
-        		container.onmousedown = function (ev) {
-                    const [ col, row ] = display.eventToPosition(ev)
-                    const box = findBox(col, row, context.boxes)
-                    if (!box)
-                        return
-
-                    const point = closestPointOnBox(col, row, box)
-
-        			context.activeLine = {
-                        start: { box, point },
-                        end: { box, point },
-                        labels: [ ]
-        			}
-
-        			container.onmousemove = function (ev) {
-                        const [ col, row ] = display.eventToPosition(ev)
-                        const box = findBox(col, row, context.boxes)
-
-                        if (box)
-                            context.activeLine.end.point = closestPointOnBox(col, row, box)
-                        else
-                           context.activeLine.end.point = { col, row }
-
-                        context.activeLine.end.box = box
-	        		}
-        		}
-
-        		container.onmouseup = function (ev) {
-                    if (context.activeLine)
-        			     context.lines.push({ ...context.activeLine })
-        			context.activeLine = undefined
-        			container.onmousemove = undefined
-        		}
-
-        	},
-        	exit: function (context) {
-                lineToggle.style.color = ''
-        		context.activeLine = undefined
-        		container.onmousemove = undefined
-        	},
-        	on: {
-                EXPORT: 'exporting',
-                DELETE: 'delete',
-                TOGGLE_BOXDRAW: 'drawing_box',
-                TOGGLE_LABEL: 'labeling',
-        		TOGGLE_LINEDRAW: 'normal',
-                TOGGLE_MOVE: 'moving_box',
-                TOGGLE_MOVETEXT: 'moving_label',
-                TOGGLE_RESIZEBOX: 'resizing_box'
-        	}
-        },
-
-        moving_label: {
-            entry: function (context) {
-                moveLabelButton.style.color = 'dodgerblue'
-
-                container.onmousedown = function (ev) {
-                    const [ col, row ] = display.eventToPosition(ev)
-                    context.movingText = findText(col, row, context.lines, context.boxes)
-                }
-
-                container.onmousemove = function (ev) {
-                    if (!context.movingText)
-                        return
-
-                    const [ col, row ] = display.eventToPosition(ev)
-
-                    const label = context.movingText
-
-                    if (label.line) {          
-                        const minCol = label.line.start.box.minCol + label.line.start.point.col //+ label.point[0]
-                        const minRow = label.line.start.box.minRow + label.line.start.point.row //+ label.point[1]
-
-                        // the label is on a line
-                        context.movingText.point[0] = col - minCol
-                        context.movingText.point[1] = row - minRow
-                        
-                    } else {
-                        // the label is on a box
-                        context.movingText.point[0] = col - context.movingText.box.minCol
-                        context.movingText.point[1] = row - context.movingText.box.minRow
-                    }
-                }
-
-                container.onmouseup = function (ev) {
-                    const [ col, row ] = display.eventToPosition(ev)
-                    context.movingText = undefined
-                }
-
-            },
-            exit: function (context) {
-                moveLabelButton.style.color = ''
-                context.movingText = undefined
-                container.onmousedown = undefined
-                container.onmousemove = undefined
-                container.onmouseup = undefined
-            },
-            on: {
-                EXPORT: 'exporting',
-                DELETE: 'delete',
-                TOGGLE_BOXDRAW: 'drawing_box',
-                TOGGLE_LABEL: 'labeling',
-                TOGGLE_LINEDRAW: 'drawing_line',
-                TOGGLE_MOVE: 'moving_box',
-                TOGGLE_MOVETEXT: 'normal',
-                TOGGLE_RESIZEBOX: 'resizing_box'
-            }
-        },
-
-        labeling: {
-            entry: function (context) {
-                labelToggle.style.color = 'dodgerblue'
-
-                const textarea = document.querySelector('textarea')
-
-                container.onmousedown = function (ev) {
-                    if (context.labelingBox) {
-                        asciiService.send('TOGGLE_LABEL')
-                        return
-                    }
-
-                    const [ col, row ] = display.eventToPosition(ev)
-                    const box = findBox(col, row, context.boxes)
-
-                    const line = box ? undefined : findLine(col, row, context.lines)
-
-                    textarea.style.display = (box || line) ? '' : 'none'
-                    if (textarea.style.display === 'none') {
-                        if (context.labelingBox) {
-                            if (context.labelingBox.box)
-                                context.labelingBox.box.labels.push(context.labelingBox)
-                            else
-                                context.labelingBox.line.labels.push(context.labelingBox)
-                        }
-                        context.labelingBox = undefined
-                        textarea.value = ''
-                        return
-                    } else {
-                        window.removeEventListener('keydown', keyShortcuts)
-                    }
-
-                    // need to do this on the next event tick
-                    setTimeout(() => textarea.focus(), 0)
-
-                    if (box) {
-                        const relativeCol = col - box.minCol
-                        const relativeRow = row - box.minRow
-
-                        context.labelingBox = {
-                            box,
-                            point: [ relativeCol, relativeRow ],
-                            text: ''
-                        }
-                    } else {
-                        const lineStartCol = line.start.box.minCol + line.start.point.col
-                        const lineStartRow = line.start.box.minRow + line.start.point.row
-
-                        const relativeCol = col - lineStartCol
-                        const relativeRow = row - lineStartRow
-
-                        context.labelingBox = {
-                            line,
-                            point: [ relativeCol, relativeRow ],
-                            text: ''
-                        }
-                    }
-                }
-
-                textarea.onkeyup = function () {
-                    if (!context.labelingBox)
-                        return
-                    context.labelingBox.text = textarea.value
-                }
-
-            },
-            exit: function (context) {
-
-                if (context.labelingBox) {
-                    if (context.labelingBox.box)
-                        context.labelingBox.box.labels.push(context.labelingBox)
-                    else
-                        context.labelingBox.line.labels.push(context.labelingBox)
-                }
-
-                const textarea = document.querySelector('textarea')
-
-                if (textarea.display !== 'none')
-                    window.addEventListener('keydown', keyShortcuts)
-                
-                textarea.value = ''
-                textarea.onkeyup = undefined
-                textarea.style.display = 'none'
-                container.onmousedown = undefined
-                context.labelingBox = undefined
-                labelToggle.style.color = ''
-            },
-            on: {
-                EXPORT: 'exporting',
-                DELETE: 'delete',
-                TOGGLE_BOXDRAW: 'drawing_box',
-                TOGGLE_LABEL: 'normal',
-                TOGGLE_LINEDRAW: 'drawing_line',
-                TOGGLE_MOVE: 'moving_box',
-                TOGGLE_MOVETEXT: 'moving_label',
-                DRAW_BOX: 'drawing_box',
-                TOGGLE_RESIZEBOX: 'resizing_box'
-            }
-        },
-        moving_box: {
-            entry: function (context) {
-                moveToggle.style.color = 'dodgerblue'
-
-                container.onmousedown = function (ev) {
-                    const [ col, row ] = display.eventToPosition(ev)
-                    const box = findBox(col, row, context.boxes)
-                    if (box)
-                        context.movingBox = {
-                            box,
-                            point: [ box.minCol - col, box.minRow - row ]
-                        }
-                }
-
-                container.onmousemove = function (ev) {
-                    if (!context.movingBox)
-                        return
-
-                    const [ col, row ] = display.eventToPosition(ev)
-
-                    const dx = col - context.movingBox.box.minCol + context.movingBox.point[0]
-                    const dy = row - context.movingBox.box.minRow + context.movingBox.point[1]
-
-                    context.movingBox.box.minCol += dx
-                    context.movingBox.box.minRow += dy
-
-                    context.movingBox.box.maxCol += dx
-                    context.movingBox.box.maxRow += dy
-                }
-
-                container.onmouseup = function (ev) {
-                    context.movingBox = undefined
-                }
-
-            },
-            exit: function (context) {
-                container.onmouseup = container.onmousedown = container.onmousemove = undefined
-                moveToggle.style.color = ''
-            },
-            on: {
-                EXPORT: 'exporting',
-                DELETE: 'delete',
-                TOGGLE_BOXDRAW: 'drawing_box',
-                TOGGLE_LABEL: 'labeling',
-                TOGGLE_LINEDRAW: 'drawing_line',
-                TOGGLE_MOVE: 'normal',
-                TOGGLE_MOVETEXT: 'moving_label',
-                TOGGLE_RESIZEBOX: 'resizing_box'
-            }
-        },
-        drawing_box: {
-        	entry: function (context) {
-                boxToggle.style.color = 'dodgerblue'
-
-                container.onmousedown = function (ev) {
-                    context.activeBox = {
-                        currentPos: display.eventToPosition(ev),
-                        downPos: display.eventToPosition(ev)
-                    }
-
-                    asciiService.send('DRAW_BOX')
-                }
-
-        		container.onmousemove = function (ev) {
-                    if (!context.activeBox)
-                        return
-
-        			context.activeBox.currentPos = display.eventToPosition(ev)
-        		}
-
-        		container.onmouseup = function (ev) {
-                    if (!context.activeBox)
-                        return
-
-					const currentPos = display.eventToPosition(ev)
-
-					const [ col, row ] = currentPos
-
-					const minCol = Math.min(col, context.activeBox.downPos[0])
-					const maxCol = Math.max(col, context.activeBox.downPos[0])
-
-					const minRow = Math.min(row, context.activeBox.downPos[1])
-					const maxRow = Math.max(row, context.activeBox.downPos[1])
-
-					if (maxCol - minCol >=1 && maxRow - minRow >= 1)
-						context.boxes.push({  minCol, minRow, maxCol, maxRow, labels: [ ] })
-
-                    context.activeBox = undefined
-				}
-        	},
-        	exit: function (context) {
-                boxToggle.style.color = ''
-                container.onmousedown = undefined
-        		container.onmousemove = undefined
-        		container.onmouseup = undefined
-        		context.activeBox = undefined
-        	},
-        	on: {
-                EXPORT: 'exporting',
-                DELETE: 'delete',
-        		TOGGLE_BOXDRAW: 'normal',
-                TOGGLE_LABEL: 'labeling',
-                TOGGLE_LINEDRAW: 'drawing_line',
-                TOGGLE_MOVE: 'moving_box',
-                TOGGLE_MOVETEXT: 'moving_label',
-                TOGGLE_RESIZEBOX: 'resizing_box'
-        	}
-        },
-        resizing_box: {
-            entry: function (context) {
-                resizeBoxButton.style.color = 'dodgerblue'
-                context.boxResizing = true
-
-                container.onmousedown = function (ev) {
-                    const [ col, row ] = display.eventToPosition(ev)
-                    const box = findBox(col, row, context.boxes)
-                    if (box && box.maxCol-1 === col && box.maxRow-1 === row)
-                        context.resizingBox = box
-                }
-
-                container.onmousemove = function (ev) {   
-                    if (!context.resizingBox)
-                        return
-
-                    const [ col, row ] = display.eventToPosition(ev)
-
-                    if (col <= context.resizingBox.minCol || row <= context.resizingBox.minRow)
-                        return
-
-                    context.resizingBox.maxCol = col + 1
-                    context.resizingBox.maxRow = row + 1
-
-                    // find all lines that originate on this box
-                    context.lines.filter((line) => {
-                        return line.start.box === context.resizingBox
-                    }).map((line) => {
-                        // update the line start position
-                        const globalCol = line.start.point.col + line.start.box.minCol
-                        const globalRow = line.start.point.row + line.start.box.minRow
-                        line.start.point = closestPointOnBox(globalCol, globalRow, line.start.box)
-                    })
-
-                    // find all lines that terminate at this box
-                    context.lines.filter((line) => {
-                        return line.end.box === context.resizingBox
-                    }).map((line) => {
-                        // update the line start position
-                        const globalCol = line.end.point.col + line.end.box.minCol
-                        const globalRow = line.end.point.row + line.end.box.minRow
-                        line.end.point = closestPointOnBox(globalCol, globalRow, line.end.box)
-                    })
-                }
-
-                container.onmouseup = function (ev) {
-                    context.resizingBox = undefined
-                }
-
-            },
-            exit: function (context) {
-                container.onmouseup = container.onmousedown = container.onmousemove = undefined
-                resizeBoxButton.style.color = ''
-                context.boxResizing = false
-            },
-            on: {
-                EXPORT: 'exporting',
-                DELETE: 'delete',
-                TOGGLE_BOXDRAW: 'drawing_box',
-                TOGGLE_LABEL: 'labeling',
-                TOGGLE_LINEDRAW: 'drawing_line',
-                TOGGLE_MOVE: 'moving_box',
-                TOGGLE_MOVETEXT: 'moving_label',
-            }
-        }
-    }
-})
-
-const asciiService = interpret(asciiMachine).start()
 
 
 function findBox (col, row, boxes) {

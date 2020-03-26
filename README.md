@@ -25,8 +25,6 @@ npm start
 
 
 ### TODO
-* bug: export is broken
-* textarea is hard to see when present
 * highlight item to delete under mouse cursor (label, line, box)
 * highlight item to move under the mouse cursor (label, box)
 * make the active command stand out more
