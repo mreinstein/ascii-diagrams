@@ -1,6 +1,7 @@
 import { Display }       from 'rot-js'
 import { createMachine,
          interpret }     from 'xstate'
+import dialogPolyfill    from 'dialog-polyfill'
 import exportToAscii     from './export.js'
 import closestPointOnBox from './find-point-on-box.js'
 import getPathCells      from './get-path-cells.js'
@@ -18,7 +19,6 @@ const model = {
 
 
 function loadFont ({ width, height }) {
-    console.log('loading font')
     const loadStart = performance.now()
 
     model.font.width = width
@@ -569,6 +569,10 @@ function loadFont ({ width, height }) {
 
 
 let display, container, asciiMachine, asciiService
+
+// handle browsers that don't natively support <dialog> yet
+const dlg = document.querySelector('dialog')
+dialogPolyfill.registerDialog(dlg)
 
 const [ boxToggle, labelToggle, lineToggle, moveToggle, moveLabelButton, resizeBoxButton, deleteButton, exportButton ] = document.querySelectorAll('button')
 const hints = document.querySelector('#hints')
