@@ -6,7 +6,7 @@ import { terser } from 'rollup-plugin-terser'
 
 const config = [
   {
-    input: 'index.js',
+    input: 'src/index.js',
     output: {
       file: 'bundle.js',
       format: 'iife',
