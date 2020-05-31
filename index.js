@@ -2,10 +2,10 @@ import { Display }       from 'rot-js'
 import { createMachine,
          interpret }     from 'xstate'
 import dialogPolyfill    from 'dialog-polyfill'
-import exportToAscii     from './export.js'
-import closestPointOnBox from './find-point-on-box.js'
-import getPathCells      from './get-path-cells.js'
-import tileMap           from './tile-map.js'
+import exportToAscii     from './lib/export.js'
+import closestPointOnBox from './lib/find-point-on-box.js'
+import getPathCells      from './lib/get-path-cells.js'
+import tileMap           from './lib/tile-map.js'
 
 
 const model = {
