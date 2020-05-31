@@ -1,11 +1,11 @@
 # ascii-diagrams
 
-ascii diagramming done right
+no bullshit ascii diagramming https://diagrams.reinstein.me
 
 ![alt text](fig4.png "screenshot")
 
 
-Despite there being a number of grid rendering modules, I couldn't find satisfying all criteria:
+I couldn't find any grid rendering modules satisfying all of these criteria:
 
 * **is not blurry on retina screens**
 * no anti-aliasing
