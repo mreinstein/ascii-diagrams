@@ -70,7 +70,7 @@ function loadFont ({ width, height }) {
 
             exporting: {
                 entry: function (context) {
-                    exportButton.style.color = 'dodgerblue'
+                    exportButton.classList.add('active-command')
                     const dialog = document.querySelector('dialog')
 
                     const textarea = dialog.querySelector('textarea')
@@ -82,7 +82,7 @@ function loadFont ({ width, height }) {
                     dialog.show()
                 },
                 exit: function (context) {
-                    exportButton.style.color = ''
+                    exportButton.classList.remove('active-command')
                     const dialog = document.querySelector('dialog')
                     dialog.close()
                 },
@@ -101,7 +101,7 @@ function loadFont ({ width, height }) {
 
             delete: {
                 entry: function (context) {
-                    deleteButton.style.color = 'dodgerblue'
+                    deleteButton.classList.add('active-command')
 
                     container.onmousedown = function (ev) {
                         const [ col, row ] = display.eventToPosition(ev)
@@ -125,7 +125,7 @@ function loadFont ({ width, height }) {
                     }
                 },
                 exit: function (context) {
-                    deleteButton.style.color = ''
+                    deleteButton.classList.remove('active-command')
                     container.onmousedown = undefined
                 },
                 on: {
@@ -143,7 +143,7 @@ function loadFont ({ width, height }) {
 
             drawing_line: {
                 entry: function (context) {
-                    lineToggle.style.color = 'dodgerblue'
+                    lineToggle.classList.add('active-command')
 
                     container.onmousedown = function (ev) {
                         const [ col, row ] = display.eventToPosition(ev)
@@ -181,7 +181,7 @@ function loadFont ({ width, height }) {
 
                 },
                 exit: function (context) {
-                    lineToggle.style.color = ''
+                    lineToggle.classList.remove('active-command')
                     context.activeLine = undefined
                     container.onmousemove = undefined
                 },
@@ -199,7 +199,7 @@ function loadFont ({ width, height }) {
 
             moving_label: {
                 entry: function (context) {
-                    moveLabelButton.style.color = 'dodgerblue'
+                    moveLabelButton.classList.add('active-command')
 
                     container.onmousedown = function (ev) {
                         const [ col, row ] = display.eventToPosition(ev)
@@ -236,7 +236,7 @@ function loadFont ({ width, height }) {
 
                 },
                 exit: function (context) {
-                    moveLabelButton.style.color = ''
+                    moveLabelButton.classList.remove('active-command')
                     context.movingText = undefined
                     container.onmousedown = undefined
                     container.onmousemove = undefined
@@ -256,7 +256,7 @@ function loadFont ({ width, height }) {
 
             labeling: {
                 entry: function (context) {
-                    labelToggle.style.color = 'dodgerblue'
+                    labelToggle.classList.add('active-command')
 
                     const textarea = document.querySelector('textarea')
 
@@ -339,7 +339,7 @@ function loadFont ({ width, height }) {
                     textarea.style.display = 'none'
                     container.onmousedown = undefined
                     context.labelingBox = undefined
-                    labelToggle.style.color = ''
+                    labelToggle.classList.remove('active-command')
                 },
                 on: {
                     EXPORT: 'exporting',
@@ -355,7 +355,7 @@ function loadFont ({ width, height }) {
             },
             moving_box: {
                 entry: function (context) {
-                    moveToggle.style.color = 'dodgerblue'
+                    moveToggle.classList.add('active-command')
 
                     container.onmousedown = function (ev) {
                         const [ col, row ] = display.eventToPosition(ev)
@@ -390,7 +390,7 @@ function loadFont ({ width, height }) {
                 },
                 exit: function (context) {
                     container.onmouseup = container.onmousedown = container.onmousemove = undefined
-                    moveToggle.style.color = ''
+                    moveToggle.classList.remove('active-command')
                 },
                 on: {
                     EXPORT: 'exporting',
@@ -405,7 +405,7 @@ function loadFont ({ width, height }) {
             },
             drawing_box: {
                 entry: function (context) {
-                    boxToggle.style.color = 'dodgerblue'
+                    boxToggle.classList.add('active-command')
 
                     container.onmousedown = function (ev) {
                         context.activeBox = {
@@ -444,7 +444,7 @@ function loadFont ({ width, height }) {
                     }
                 },
                 exit: function (context) {
-                    boxToggle.style.color = ''
+                    boxToggle.classList.remove('active-command')
                     container.onmousedown = undefined
                     container.onmousemove = undefined
                     container.onmouseup = undefined
@@ -463,7 +463,7 @@ function loadFont ({ width, height }) {
             },
             resizing_box: {
                 entry: function (context) {
-                    resizeBoxButton.style.color = 'dodgerblue'
+                    resizeBoxButton.classList.add('active-command')
                     context.boxResizing = true
 
                     container.onmousedown = function (ev) {
@@ -513,7 +513,7 @@ function loadFont ({ width, height }) {
                 },
                 exit: function (context) {
                     container.onmouseup = container.onmousedown = container.onmousemove = undefined
-                    resizeBoxButton.style.color = ''
+                    resizeBoxButton.classList.remove('active-command')
                     context.boxResizing = false
                 },
                 on: {

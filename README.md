@@ -25,7 +25,6 @@ npm start
 
 
 ### TODO
-* bug: when hints show, the outline of the active command grows and looks odd
 
 * highlight item to move under the mouse cursor (label, box)
 * highlight item to delete under mouse cursor (label, line, box)
