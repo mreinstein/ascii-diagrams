@@ -1,11 +1,8 @@
-import { Display }       from 'rot-js'
-import { createMachine,
-         interpret }     from 'xstate'
-import dialogPolyfill    from 'dialog-polyfill'
 import exportToAscii     from './export.js'
 import closestPointOnBox from './find-point-on-box.js'
 import getPathCells      from './get-path-cells.js'
 import tileMap           from './tile-map.js'
+import { Display, interpret, createMachine, dialogPolyfill } from './deps.js'
 
 
 const model = {
@@ -19,8 +16,7 @@ const model = {
 
 
 function loadFont ({ width, height }) {
-    const loadStart = performance.now()
-
+    
     model.font.width = width
     model.font.height = height
     model.columns = Math.ceil(window.outerWidth / width)
@@ -531,7 +527,6 @@ function loadFont ({ width, height }) {
 
     asciiService = interpret(asciiMachine).start()
 
-
     const img = new Image();
 
     img.src = `/font/font_${model.font.width}_${model.font.height}.png`;
@@ -562,7 +557,6 @@ function loadFont ({ width, height }) {
 
         container = display.getContainer()
         document.body.appendChild(container)
-        console.log('load finished. elapsed:', performance.now() - loadStart)
         animate()
     }
 }
