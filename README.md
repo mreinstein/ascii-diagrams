@@ -16,12 +16,9 @@ I couldn't find any grid rendering modules satisfying all of these criteria:
 so here we are.
 
 
-## installation
+## usage
 
-```
-npm install
-npm start
-```
+serve this directory with a webserver and open `index.html` in a browser.
 
 
 ### TODO
